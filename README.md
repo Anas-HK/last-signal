@@ -1,0 +1,147 @@
+# LAST SIGNAL
+
+**You fly. Chat keeps you alive.**
+
+A cooperative space rescue built for Twitch. The streamer pilots a damaged ship through an asteroid field. Viewers become its named crew, powering shields, firing engines, and repairing the hull from chat. Three people coordinating different stations create an **ALL HANDS** rescue pulse. Recover the escape pods before the jump window closes, then put the people who made it happen in the credits.
+
+Built with OpenAI Codex for the Codex × TwitchCon Hackathon. No paid inference service, game engine, or database is required to run it.
+
+![The working Last Signal flight console](docs/screen-ready.png)
+
+## Run in two minutes
+
+Requires **Node.js 24+** and npm. Windows, macOS, or Linux.
+
+```sh
+npm ci
+npm run build
+npm start
+```
+
+Open **http://localhost:3001**. No credentials are needed for rehearsal.
+
+1. Leave **Simulated crew** on.
+2. Click **Launch rescue**, then click the flight screen.
+3. Fly with **WASD / arrow keys**. Enter the amber rings to rescue pods. **Space** pauses.
+4. Turn on **Training pilot** for a reproducible, hands-free rehearsal, or pilot yourself.
+5. Try the manual viewer controls below the flight screen. Every simulated action is visibly labeled.
+
+The mission lasts up to 120 seconds. The training pilot with simulated crew completes the default seed in about 90 seconds, rescuing all 13 survivors. Collisions, shields, repairs, rescues, and the result are calculated by the game; the demonstration is not a scripted video or predetermined win.
+
+## Twitch integration — no keys required
+
+1. Click **Connect Twitch**.
+2. Enter your channel name (for example, `your_channel`, without a URL).
+3. Click **Join live chat**. The app confirms the actual Twitch channel room ID.
+4. Launch a rescue and send `!shield`, `!boost`, or `!repair` in that Twitch chat after the countdown.
+
+This path uses a **read-only anonymous connection to Twitch IRC**. It requires no application registration, client ID, client secret, or 2FA setup for the game connection. Viewers send messages through their ordinary Twitch accounts. The server never sends chat messages. A successful connection to `anashk123` was tested against Twitch on 2026-11-02; the complete command path is recorded in [VALIDATION.md](docs/VALIDATION.md).
+
+Anonymous IRC is a compatibility path discussed on the [Twitch developer forums](https://discuss.dev.twitch.com/t/possible-to-connect-to-twitch-irc-anonymously/5921). Twitch recommends EventSub for new integrations, and that option is also implemented below. The anonymous behavior is tested against the current service rather than promised as a future API guarantee.
+
+### Optional OAuth / EventSub connection
+
+The optional registered-app connection uses Twitch's **OAuth authorization code flow** and **EventSub WebSockets**, with the `channel.chat.message` subscription. The only permission requested is `user:read:chat`. Tokens stay in server memory and are discarded on restart or disconnect. There is no token in the browser, URL, mission report, or Git repository.
+
+### Configure your application
+
+1. Register an application at [Twitch Developer Console](https://dev.twitch.tv/console/apps). Choose a **Confidential** client.
+2. Add this exact OAuth redirect URL:
+
+   ```text
+   http://localhost:3001/auth/twitch/callback
+   ```
+
+3. Copy `.env.example` to `.env`. Fill in the application's client ID and generated client secret:
+
+   ```dotenv
+   TWITCH_CLIENT_ID=your_application_client_id
+   TWITCH_CLIENT_SECRET=your_application_client_secret
+   APP_URL=http://localhost:3001
+   PORT=3001
+   HOST=127.0.0.1
+   ```
+
+4. Restart `npm start`. Open the console at `http://localhost:3001`, click **Connect Twitch**, expand **Optional: OAuth / EventSub connection**, and authorize your account.
+5. The connection starts with your own channel. You can change the listening channel in the connection dialog before launching a mission. An offline channel with accessible chat is sufficient; a live video broadcast is not required.
+6. Select **Twitch live**, launch, and ask a viewer to type `!shield`, `!boost`, or `!repair` in that channel. The connection dialog counts actual received messages. Check the named action in the crew feed and the corresponding resource change.
+
+Do not paste a secret into chat or commit `.env`. The server binds to loopback by default; this is a local streamer tool rather than a hosted multi-user service. Use the same computer for OBS and the pilot console. `.env` is loaded at server startup, so changes need a restart.
+
+### Commands and fairness
+
+| Chat command | Effect | Role |
+|---|---|---|
+| `!shield` | +18 shield, capped at 100 | Absorb asteroid damage before hull damage |
+| `!boost` | +22 boost charge, capped at 100 | Increase travel speed while charge lasts |
+| `!repair` | Restore 8 hull, capped at 100 | Prevent a hull failure |
+
+Each viewer has a 1.8-second cooldown (displayed as approximately 2 seconds). The uplink accepts up to 15 commands per second and 500 unique crew members per mission. Full systems reject extra commands. Only accepted, effective contributions earn points. Ordinary chat is ignored by the game and is not displayed or stored.
+
+**ALL HANDS:** three distinct viewers activate the three different stations within six seconds. A six-second tractor pulse increases rescue range from 100 to 195 world units. Each contributor earns 40 bonus points. One person cannot fill all three stations alone.
+
+### Integration verification
+
+See [VALIDATION.md](docs/VALIDATION.md) for the exact testing evidence and live-validation status. A successful transport handshake is separate from an authorized subscription and a real channel message. Rehearsal never claims to be real Twitch activity, and live missions reject simulated input.
+
+Official resources used:
+
+- [Authorization code flow](https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/#authorization-code-grant-flow)
+- [Token validation](https://dev.twitch.tv/docs/authentication/validate-tokens/)
+- [EventSub WebSocket lifecycle](https://dev.twitch.tv/docs/eventsub/handling-websocket-events/)
+- [Chat message subscription](https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#channelchatmessage)
+- [Creating subscriptions](https://dev.twitch.tv/docs/eventsub/manage-subscriptions/)
+
+## OBS broadcast view
+
+Add a **Browser Source** with URL `http://localhost:3001/overlay`, width **1920**, height **1080**, and **60 fps**. Leave “Shutdown source when not visible” unchecked. The **Add to OBS** button provides the URL and settings.
+
+Keep the pilot console open. The broadcast is a spectator of the same authoritative server simulation and cannot send control inputs. Both screens show the same ship, viewer names, rescue state, and credits. The rehearsal label remains visible in the broadcast. Enable sound in the pilot console if wanted; avoid capturing duplicate audio sources.
+
+## Development and tests
+
+```sh
+npm run dev         # game server :3001 and Vite :5173
+npm run check       # strict TypeScript validation
+npm test            # deterministic engine and EventSub fixture tests
+npx playwright install chromium
+npm run test:e2e    # builds and launches an isolated server :3002
+```
+
+Development UI: `http://localhost:5173`. For OAuth on Vite, set `APP_URL=http://localhost:5173` and register `http://localhost:5173/auth/twitch/callback` in Twitch. The Vite proxy forwards `/api`, `/auth`, and `/ws`. The production-style quickstart above is recommended for the demo.
+
+Browser tests cover actual keyboard movement, viewer input, pause/reset, source separation, setup dialogs, mobile overflow, unauthorized mutations, an entire real-time rescue, synchronized OBS results, and the downloadable mission report. The test server has Twitch credentials explicitly disabled. EventSub fixtures test authentication checks, subscription payloads, message deduplication, channel filtering, reconnection, and unsafe URL rejection. They do not claim to prove a live channel integration.
+
+## Architecture
+
+```text
+Twitch chat → EventSub → Twitch adapter → authoritative game engine
+                                             ↑         ↓
+                                     pilot inputs   snapshots
+                                             ↑         ↓
+                                      React console / OBS canvas
+```
+
+- `server/game.ts`: deterministic physics, mission, crew actions, fairness, coordinated pulse.
+- `server/twitch.ts`: OAuth exchange, validation/refresh, subscription, reconnect, deduplication.
+- `server/irc.ts`: credential-free read-only chat, IRC frame parsing, PING/PONG, channel confirmation, reconnect, and deduplication.
+- `server/index.ts`: local HTTP/WebSocket server, OAuth state, spectator permissions, reports.
+- `shared/types.ts`: typed protocol, state, and exact command parser.
+- `src/Space.tsx`: procedural Canvas spacecraft, planet, asteroids, named drones, particles, HUD.
+- `src/App.tsx`: pilot workflow, crew feed, setup, rehearsal controls, results, broadcast.
+
+Simulation runs at 30 Hz; snapshots are sent at 15 Hz and rendered with browser interpolation. All game rules run on the server. The default route uses a fixed seed so demos are repeatable. Session state is intentionally in memory; restarting the server resets the mission and Twitch connection. Only one active pilot controls the ship; another console can take over when the first stops sending input. There is no user-account service, database, public-hosting authentication, or mobile touch-flight controller.
+
+## Submission
+
+- [Project description](docs/PROJECT_DESCRIPTION.md)
+- [Under-three-minute video script and recording instructions](docs/DEMO_SCRIPT.md)
+- [Submission checklist](docs/SUBMISSION.md)
+- [Codex session and development record](docs/CODEX_SESSION.md)
+- [Sprint decisions](docs/SPRINT.md)
+
+**Codex session ID:** `01a19ccf-e07f-7e72-9a32-fcae9d50c948`. It was captured from this active session's environment. Confirm with `/status` in Codex before submitting.
+
+## Credits
+
+Product, implementation, tests, and iterative debugging were built in this Codex session. A [Superdesign draft](https://superdesign.dev/teams/e0cb2fff-718e-4bb7-8150-f93a155ef1ff/projects/597d54cc-621a-4534-98ae-35d2ab50face) supported the visual direction. The game artwork is procedural Canvas code. Fonts are bundled locally under their SIL Open Font Licenses in `public/fonts`. UI icons: Lucide (ISC). Application code: MIT.
