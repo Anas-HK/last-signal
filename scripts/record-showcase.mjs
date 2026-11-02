@@ -7,8 +7,8 @@ const origin = process.argv[2] || "http://localhost:3304";
 const live = process.argv.includes("--live");
 const out = live ? "artifacts/live-proof" : "artifacts/showcase";
 fs.mkdirSync(out, { recursive: true });
-const browser = await chromium.launch({ args: ["--disable-background-timer-throttling", "--disable-renderer-backgrounding", "--disable-backgrounding-occluded-windows"] });
-const context = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+const browser = await chromium.launch({ headless: false, args: ["--disable-background-timer-throttling", "--disable-renderer-backgrounding", "--disable-backgrounding-occluded-windows"] });
+const context = await browser.newContext({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1.25 });
 const page = await context.newPage();
 const errors = [];
 page.on("pageerror", (e) => errors.push(e.message));
@@ -72,8 +72,9 @@ try {
   await page.evaluate(() => {
     const game = document.querySelector("canvas");
     const composite = document.createElement("canvas");
-    composite.width = 1600; composite.height = 900;
+    composite.width = 1920; composite.height = 1080;
     const ctx = composite.getContext("2d");
+    ctx.scale(1.2, 1.2);
     window.__demoFrames = [];
     function draw(now) {
       window.__demoFrames.push(now);
@@ -97,7 +98,7 @@ try {
     const stream = composite.captureStream(60);
     for (const track of window.__demoAudioDest.stream.getAudioTracks()) stream.addTrack(track);
     window.__demoChunks = [];
-    const recorder = new MediaRecorder(stream, { mimeType: "video/webm;codecs=vp8,opus", videoBitsPerSecond: 12000000 });
+    const recorder = new MediaRecorder(stream, { mimeType: "video/webm;codecs=vp8,opus", videoBitsPerSecond: 24000000 });
     recorder.ondataavailable = (e) => { if (e.data.size) window.__demoChunks.push(e.data); };
     window.__demoRecorder = recorder;
     window.__demoStarted = performance.now();
@@ -112,13 +113,21 @@ try {
   let held = new Set();
   const milestones = [];
   const powers = new Set();
+  const steering = {w:0,s:0,a:0,d:0};
+  const positions = [];
   let lastPower = "";
+  let lastFpsLog = -10;
   while (Date.now() - recordedAt < 155000) {
     if (!state || state.phase !== "running" || state.countdown > 0) {
       if (state?.phase === "won" || state?.phase === "lost") break;
       await page.waitForTimeout(80); continue;
     }
     const t = state.elapsed;
+    if(t-lastFpsLog>=10){
+      lastFpsLog=t;
+      const fps=await page.evaluate(()=>{const a=window.__demoFrames.slice(-180);return a.length>1 ? 1000*(a.length-1)/(a.at(-1)-a[0]) : 0;});
+      console.log("CAPTURE FPS",fps.toFixed(1));
+    }
     if (!live && t - supportAt > 2.5) {
       command("nova_rae", "shield"); command("orbit_olive", "boost"); command("pixelpilot", "repair"); supportAt = t;
     }
@@ -131,12 +140,17 @@ try {
     const crate = state.drops.find((d) => d.x > state.ship.x - 40);
     const targetY = podNear ? pod.y : crate ? crate.y : 330 + Math.sin(t * 0.35) * 90;
     const keys = new Set();
+    const targetX = crate && !podNear ? Math.max(220, Math.min(570, crate.x - 90)) : podNear ? Math.max(220,Math.min(560,pod.x-state.distance-90)) : 350 + Math.sin(t * 0.42) * 150;
+    if (targetX-state.ship.x > 18) keys.add("d");
+    if (targetX-state.ship.x < -18) keys.add("a");
+    positions.push({t,x:state.ship.x,y:state.ship.y});
     if (targetY - state.ship.y > 12) keys.add("s");
     if (targetY - state.ship.y < -12) keys.add("w");
     if ((t % 4 < 2.2 || state.ship.rapid > 0) && state.ship.overheated <= 0) keys.add(" ");
     for (const key of held) if (!keys.has(key)) await page.keyboard.up(key);
     for (const key of keys) if (!held.has(key)) await page.keyboard.down(key);
     held = keys;
+    for (const key of keys) if (key in steering) steering[key]++;
     if (state.ship.powerup && state.ship.powerup.kind !== lastPower) {
       lastPower = state.ship.powerup.kind;
       await page.waitForTimeout(800);
@@ -168,7 +182,7 @@ try {
   fs.writeFileSync(`${out}/gameplay-with-audio.webm`, Buffer.from(base64, "base64"));
   if (fs.statSync(`${out}/gameplay-with-audio.webm`).size < 100000) throw new Error("Recorded media is unexpectedly small.");
   const report = await (await fetch(`${origin}/api/report`)).json();
-  fs.writeFileSync(`${out}/recording.json`, JSON.stringify({ recordedAt, report, twitch, realCommands, powers: [...powers], milestones, events: [...events.values()], errors, input: live ? "Actual Twitch commands; automated keyboard control; no simulated inputs" : "Automated keyboard control with labeled simulated chat; built-in training pilot disabled" }, null, 2));
+  fs.writeFileSync(`${out}/recording.json`, JSON.stringify({ recordedAt, report, twitch, realCommands, steering, positions, powers: [...powers], milestones, events: [...events.values()], errors, input: live ? "Actual Twitch commands; automated keyboard control; no simulated inputs" : "Automated keyboard control with labeled simulated chat; built-in training pilot disabled" }, null, 2));
   if (!live && powers.size !== 3) throw new Error("Recording does not show all three power-ups; record additional footage before publishing.");
   if (errors.length) throw new Error(`Browser errors: ${errors.join(", ")}`);
 } finally {

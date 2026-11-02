@@ -35,4 +35,10 @@ Both final exports decoded without errors. Sampled frames confirmed the nova cle
 
 At 19:11 UTC on 2026-11-02, actual Twitch viewer `anashk999` sent `!join`, `!boost`, `!drop`, and `!meteor` in `#anashk123`. The live adapter accepted all four commands. The game spawned the named bubble-shield crate and meteor; the crate was caught and the viewer credited. The recorded live mission was in live mode with simulation and training pilot disabled, and finished with all 13 survivors. The connection dialog confirmed four real received messages. Exact command receipts and mission events are preserved locally in `artifacts/live-proof/recording.json`.
 
-The revised videos include a separate real-Twitch segment and the connection confirmation. Rehearsal command visualization is labeled simulated; the actual Twitch segment displays only commands received from Twitch. The gameplay area uses motion interpolation for 60 fps delivery; chat text is kept separate from interpolation to remain sharp.
+The revised videos include a separate real-Twitch segment and the connection confirmation. Rehearsal command visualization is labeled simulated; the actual Twitch segment displays only commands received from Twitch. The latest capture was recorded at 1920x1080 and encoded at 60 fps without motion interpolation, preserving the original gameplay detail and keeping chat text sharp.
+
+## Sharp capture and steering revision
+
+The latest main showcase was re-recorded at 1920x1080 using a high-resolution canvas in a headed browser, with capture separated from encoding. The recorded compositor averaged 58.18 fps including the ending screenshots; the 95th-percentile frame gap was 16.8 ms. Gameplay logging confirmed all four keys were used: W 103, S 109, A 187, D 183 controller samples. Ship X ranged from 85 to 611 and Y from 85 to 577. The mission recovered all 13 survivors and demonstrated nova, bubble and overdrive.
+
+The low-resolution motion-interpolation stage was removed. The voiceover version uses a clean master with no added subtitles in either the rehearsal or real Twitch segment. The separate version without narration retains embedded captions. Both retain game audio and the actual Twitch command/connection proof.

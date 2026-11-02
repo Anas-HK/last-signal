@@ -41,7 +41,7 @@ You fly. Chat keeps you alive.
 
 LAST SIGNAL is a Twitch co-op space rescue. The pilot steers, fires a laser, dashes with fuel from chat, and fires caught power-ups with E. Viewers board with !join, supply !shield, !boost and !repair, send crates with !drop, or throw named meteors with !meteor. Three distinct viewers coordinating the three stations trigger ALL HANDS. Rescue three pods and bring 13 survivors home before the two-minute jump window closes.
 
-The demo captures the actual game with labeled simulated chat, keyboard-controlled flight, all three power-ups being caught and fired, laser fire, dashes, named meteors, and a complete rescue of all 13 survivors. It uses automated keyboard control with the built-in training pilot disabled. Both versions include captured game music and effects and captions embedded below the flight HUD. The voiceover version uses AI-generated Grady narration through Higgsfield; the other version has no narration.
+The demo captures the actual game with labeled simulated chat, keyboard-controlled flight, all three power-ups being caught and fired, laser fire, dashes, named meteors, and a complete rescue of all 13 survivors. It uses automated keyboard control with the built-in training pilot disabled. Both versions include captured game music and effects. Only the version without narration has embedded captions; the voiceover version has no added subtitles. The voiceover version uses AI-generated Grady narration through Higgsfield; the other version has no narration.
 
 The video also shows real Twitch viewer anashk999 sending join, boost, drop and meteor, all accepted by the live game. The connection dialog confirms four actual messages received. OAuth/EventSub remains optional and fixture-tested.
 
