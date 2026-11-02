@@ -316,7 +316,18 @@ wss.on("connection", (raw) => {
           )
         )
           return;
-        game.input = { up: i.up, down: i.down, left: i.left, right: i.right };
+        if (i.fire === true && !game.input.fire) game.pressed.fire = true;
+        if (i.dash === true && !game.input.dash) game.pressed.dash = true;
+        if (i.use === true && !game.input.use) game.pressed.use = true;
+        game.input = {
+          up: i.up,
+          down: i.down,
+          left: i.left,
+          right: i.right,
+          fire: i.fire === true,
+          dash: i.dash === true,
+          use: i.use === true,
+        };
       } else if (message.type === "action") {
         if (message.action === "start") {
           if (
@@ -335,7 +346,7 @@ wss.on("connection", (raw) => {
           game.state.autopilot = Boolean(message.value);
       } else if (
         message.type === "command" &&
-        [...COMMANDS, "join"].includes(message.command) &&
+        [...COMMANDS, "join", "drop", "meteor"].includes(message.command) &&
         typeof message.name === "string"
       ) {
         const name = message.name.trim().slice(0, 25) || "you";

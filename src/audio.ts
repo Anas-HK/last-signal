@@ -264,6 +264,27 @@ export function playSound(type: string, command?: string) {
   } else if (type === "sync") {
     [440, 554, 659, 880, 1109].forEach((f, i) => tone(f, t + i * 0.05, 0.7, "sawtooth", 0.035, 2600));
     sweep(t, 200, 4000, 0.8, 0.15);
+  } else if (type === "laser") {
+    tone(1250, t, 0.09, "square", 0.022, 4000, 420);
+  } else if (type === "crack") {
+    hat(t, 0.08, 0.06, 2500, sfx);
+  } else if (type === "boom") {
+    hat(t, 0.32, 0.4, 120, sfx);
+    tone(140, t, 0.35, "sine", 0.12, 900, 38);
+  } else if (type === "dash") {
+    sweep(t, 600, 5000, 0.45, 0.25);
+    tone(220, t, 0.4, "sawtooth", 0.05, 1500, 880);
+  } else if (type === "drop") {
+    [784, 988].forEach((f, i) => tone(f, t + i * 0.07, 0.15, "triangle", 0.04));
+  } else if (type === "pickup") {
+    [659, 880, 1175, 1568].forEach((f, i) => tone(f, t + i * 0.05, 0.22, "square", 0.035, 5000));
+  } else if (type === "powerup") {
+    sweep(t, 150, 6000, 0.9, 0.3);
+    [220, 330, 440, 660].forEach((f) => tone(f, t, 1.1, "sawtooth", 0.035, 2200));
+  } else if (type === "meteor") {
+    [880, 660, 880, 660].forEach((f, i) => tone(f, t + i * 0.12, 0.11, "square", 0.04, 3000));
+  } else if (type === "destroyed") {
+    [523, 784].forEach((f, i) => tone(f, t + i * 0.06, 0.18, "triangle", 0.05));
   } else if (type === "tick") {
     tone(660, t, 0.12, "square", 0.04, 2500);
   } else if (type === "go") {

@@ -2,7 +2,7 @@
 
 **You fly. Chat keeps you alive.**
 
-A cooperative space rescue built for Twitch. The streamer pilots a damaged ship through an asteroid field. Viewers type `!join` to board before launch, then become its named crew, powering shields, firing engines, and repairing the hull from chat. Three people coordinating different stations create an **ALL HANDS** rescue pulse. Recover the escape pods before the jump window closes, then put the people who made it happen in the credits.
+A cooperative space rescue built for Twitch. The streamer pilots a damaged ship through an asteroid field. Viewers type `!join` to board before launch, then become its named crew: they power shields, fuel the pilot's dash, repair the hull, send power-up crates the pilot has to catch (`!drop`), or throw named meteors at the pilot for fun (`!meteor`). The pilot flies, shoots, dashes and fires the gifts chat sends. Three people coordinating different stations create an **ALL HANDS** rescue pulse. Recover the escape pods before the jump window closes, then put the people who made it happen in the credits.
 
 Built with OpenAI Codex for the Codex × TwitchCon Hackathon. No paid inference service, game engine, or database is required to run it.
 
@@ -23,11 +23,11 @@ Open **http://localhost:3001**. No credentials are needed for rehearsal.
 1. Click **Turn on sound & music** (browsers only allow audio after a click).
 2. Leave **Simulated crew** on. Optionally board a few viewers with the manual **!join** button to see the lobby fill.
 3. Click **Launch rescue**, then click the flight screen.
-4. Fly with **WASD / arrow keys**. Enter the amber rings to rescue pods. **Space** pauses. Hold **D** at the front of the zone to fire the afterburner.
+4. Fly with **WASD / arrow keys** and enter the amber rings to rescue pods. **Space** fires the laser, **Shift** dashes (burns boost fuel from chat), **E** fires the power-up a viewer sent, **P** or **Esc** pauses. Hold **D** at the front of the zone for the afterburner.
 5. Turn on **Training pilot** for a reproducible, hands-free rehearsal, or pilot yourself.
 6. Try the manual viewer controls below the flight screen. Every simulated action is visibly labeled.
 
-The mission lasts up to 120 seconds. The training pilot with simulated crew completes the default seed in about 75 seconds, rescuing all 13 survivors (measured 2026-11-02 after the polish pass). Collisions, shields, repairs, rescues, and the result are calculated by the game; the demonstration is not a scripted video or predetermined win.
+The mission lasts up to 120 seconds. The training pilot with simulated crew completes the default seed in about 106 seconds, rescuing all 13 survivors (measured 2026-11-02 after the gameplay update). Collisions, shields, repairs, rescues, and the result are calculated by the game; the demonstration is not a scripted video or predetermined win.
 
 ## Twitch integration — no keys required
 
@@ -76,12 +76,18 @@ Do not paste a secret into chat or commit `.env`. The server binds to loopback b
 |---|---|---|
 | `!join` | Board the crew before launch; assigned to the least-staffed station | Fill the lobby; no charge spent |
 | `!shield` | +18 shield, capped at 100 | Absorb asteroid damage before hull damage |
-| `!boost` | +22 boost charge, capped at 100 | Nearly double travel speed while charge lasts |
+| `!boost` | +22 dash fuel, capped at 100 | The pilot burns 20 fuel per dash (Shift) |
 | `!repair` | Restore 8 hull, capped at 100 | Prevent a hull failure |
+| `!drop` | Launches a crate with your name: NOVA BOMB, BUBBLE SHIELD or OVERDRIVE GUNS | The pilot catches it and fires it with E; you earn 25 points |
+| `!meteor` | Throws a named meteor at the pilot after a red warning line | Chaos: the pilot dodges or shoots it down |
 
 Any words after the command are ignored, so `!boost go` works. Twitch can block a viewer from sending the exact same message twice in a row, so the on-stream footer tells viewers to add a word when repeating. Commands work in the lobby and during the countdown (precharging the ship).
 
-**Crew-scaled debris.** Asteroid damage scales with crew size: 34% with no crew, rising to full strength at five crew. The HUD shows the current level. Cruise speed alone reaches the jump gate in about 115 seconds, so a solo streamer or a small chat can finish, while a big chat faces the full storm. In simulation with a bot pilot (12 seeds per setting), a solo pilot finished about 1 in 4 runs, one viewer sending a command every 8 seconds finished 10 to 11 in 12, and three or more active viewers finished every run.
+**Pilot abilities.** The laser destroys asteroids (big ones crack first and need two hits) and shoots down meteors, but overheats if held too long. A dash costs 20 fuel, nearly triples speed for about a second and smashes small rocks in the way; dashes need 3.5 seconds between them. Crates hold one of three power-ups: NOVA BOMB clears the screen, BUBBLE SHIELD rams anything for five seconds, OVERDRIVE GUNS fires a rapid triple laser for six seconds.
+
+**Dynamic hazards.** Five debris walls with a single gap cross the route (find the gap or blast through), comets fire at the ship in the storm sector, and viewer meteors arrive with a warning line that shows their exact path.
+
+**Crew-scaled debris.** Asteroid damage scales with crew size: 50% with no crew, rising to full strength at five crew. Cruise speed alone reaches the jump gate in about 115 seconds. In simulation with a bot pilot (12 seeded runs per setting, measured 2026-11-02): a solo pilot who shoots accurately finished every run but with about a third of the hull left; a solo pilot who never fires finished none; with two viewers helping, even a pilot who never fires finished every run. Skill and chat both matter.
 
 **Afterburner.** The ship eases to a stop at the front of the flight zone instead of hitting the screen edge. Holding forward there fires an afterburner for extra speed, at the cost of less reaction time.
 

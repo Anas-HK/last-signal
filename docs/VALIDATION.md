@@ -44,3 +44,10 @@ Rehearsal bots and manually entered names are simulated. The same game rules app
 - 6/6 Playwright browser tests pass on an isolated port (`E2E_PORT=3302`): the three original journeys plus lobby boarding with rejections, countdown precharge, afterburner and full log export; sound and music controls; and the control-key, Host allowlist and OAuth return checks. All viewers in these tests are labelled simulated viewers.
 - Real Twitch, read-only IRC: at about 16:40 UTC a separate test instance joined `#anashk123` (Twitch confirmed the room in about 3 seconds). Real viewer `anashk999` sent `!join` (boarded, assigned the SHIELDS station), `!boost go` (engines precharged to 22%) and `!repair` (rejected on screen: hull already full). The OBS view showed the real name in the lobby, ticker and crew drone, and the precharged boost carried into launch.
 - Not verified live: OAuth/EventSub (no registered app), and raids or other Twitch events (not implemented).
+
+## Gameplay update verification (2026-11-02)
+
+- New mechanics: pilot laser with heat, Shift dash fuelled by `!boost`, `!drop` power-up crates (nova, bubble, overdrive) caught by the pilot and fired with E, `!meteor` named meteors with warning lines, debris walls and storm comets.
+- 31/31 engine tests pass, including laser hits and cracking, overheating, dash ramming, crate catch and nova clear, meteor warning, shoot-down and hit attribution, and the reproducible rehearsal win (all 13 survivors in about 106 seconds).
+- 7/7 Playwright browser tests pass on an isolated port, including a new journey that fires the laser, dashes, sends a crate and a meteor through the console, and pauses with P. All viewers in browser tests are labelled simulated viewers.
+- Not yet verified with real Twitch chat: `!drop` and `!meteor` (they use the same verified chat path as `!join` and `!boost`).

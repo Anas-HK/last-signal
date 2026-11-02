@@ -35,20 +35,25 @@ test("real viewers can crew the ready ship and recharge between lobby commands",
   assert.equal(g.state.ship.boost, 22);
   assert.equal(g.state.distance, 0);
 });
-test("boost causes measurable acceleration and greater travel distance, then decays to cruise", () => {
+test("chat fuels the boost tank; the pilot's dash burns it for real speed, then cruise returns", () => {
   const normal = launch(),
     boosted = launch();
   normal.state.rocks = [];
   boosted.state.rocks = [];
   boosted.command("engineer", "Engineer", "boost", true);
+  assert.equal(boosted.state.ship.boost, 22);
+  boosted.tick(1 / 30);
+  assert.equal(boosted.state.ship.speed, BALANCE.cruise, "fuel alone does not move the ship");
+  boosted.input = { up: false, down: false, left: false, right: false, dash: true };
   const a = normal.state.distance,
     b = boosted.state.distance;
   for (let i = 0; i < 30; i++) {
     normal.tick(1 / 30);
     boosted.tick(1 / 30);
   }
-  assert.ok(boosted.state.ship.speed > 100);
+  assert.ok(boosted.state.ship.speed > 150);
   assert.equal(normal.state.ship.speed, BALANCE.cruise);
+  assert.equal(boosted.state.ship.boost, 22 - BALANCE.dashCost);
   assert.ok(boosted.state.distance - b > (normal.state.distance - a) * 1.6);
   for (let i = 0; i < 240; i++) boosted.tick(1 / 30);
   assert.ok(boosted.state.ship.speed < BALANCE.cruise + 1);
@@ -141,6 +146,7 @@ test("an impact consumes shields before hull and the shield block is credited", 
       rotation: 0,
       hit: false,
       speed: 0,
+      hp: 1,
     },
   ];
   g.tick(1 / 30);
@@ -156,7 +162,7 @@ test("debris damage scales with crew size and reaches full strength at five crew
   for (const g of [solo, crewed]) {
     g.tick(1 / 30);
     g.state.ship.shield = 0;
-    g.state.rocks = [{ id: 1, x: g.state.distance + g.state.ship.x + 2, y: g.state.ship.y, r: 20, rotation: 0, hit: false, speed: 0 }];
+    g.state.rocks = [{ id: 1, x: g.state.distance + g.state.ship.x + 2, y: g.state.ship.y, r: 20, rotation: 0, hit: false, speed: 0, hp: 1 }];
     g.tick(1 / 30);
   }
   assert.equal(solo.state.debris, BALANCE.debrisFloor);
@@ -262,4 +268,111 @@ test("holding forward eases into the front of the zone and fires the afterburner
   g.input = { up: false, down: false, left: false, right: false };
   for (let i = 0; i < 60; i++) g.tick(1 / 30);
   assert.ok(g.state.ship.afterburner < 0.05);
+});
+
+const idle = { up: false, down: false, left: false, right: false };
+function rockAhead(g: Game, dx: number, r = 20) {
+  return { id: 900 + dx, x: g.state.distance + g.state.ship.x + dx, y: g.state.ship.y, r, rotation: 0, hit: false, speed: 0, hp: r > 28 ? 2 : 1 };
+}
+test("the pilot's laser destroys rocks; big rocks crack first and need two hits", () => {
+  const g = launch();
+  const small = rockAhead(g, 300, 20);
+  const big = rockAhead(g, 520, 35);
+  g.state.rocks = [small];
+  g.input = { ...idle, fire: true };
+  for (let i = 0; i < 20 && !small.hit; i++) g.tick(1 / 30);
+  assert.equal(small.hit, true);
+  assert.equal(g.state.destroyed, 1);
+  g.state.rocks = [big];
+  big.x = g.state.distance + g.state.ship.x + 400;
+  for (let i = 0; i < 30 && big.hp === 2; i++) g.tick(1 / 30);
+  assert.equal(big.hp, 1, "first hit cracks it");
+  assert.equal(big.hit, false);
+  for (let i = 0; i < 20 && !big.hit; i++) g.tick(1 / 30);
+  assert.equal(big.hit, true);
+});
+test("holding the trigger overheats the laser for a moment", () => {
+  const g = launch();
+  g.state.rocks = [];
+  g.input = { ...idle, fire: true };
+  let overheated = false;
+  for (let i = 0; i < 180; i++) {
+    g.tick(1 / 30);
+    overheated ||= g.state.ship.overheated > 0;
+  }
+  assert.equal(overheated, true);
+});
+test("a dash rams straight through asteroids without damage", () => {
+  const g = launch();
+  g.state.ship.boost = 40;
+  g.state.ship.shield = 0;
+  const rock = rockAhead(g, 0, 20);
+  g.state.rocks = [rock];
+  g.input = { ...idle, dash: true };
+  g.tick(1 / 30);
+  assert.ok(g.state.ship.dash > 0);
+  assert.equal(rock.hit, true);
+  assert.ok(g.state.ship.hull > 99.9);
+  assert.equal(g.state.ship.boost, 40 - BALANCE.dashCost);
+});
+test("!drop launches a named crate after launch; catching it arms a power-up and credits the viewer", () => {
+  const g = new Game();
+  g.reset("live");
+  g.chat("v1", "Gifter", "join", false);
+  assert.equal(g.chat("v1", "Gifter", "drop", false).accepted, false);
+  assert.match(g.state.events.at(-1)!.text, /open after launch/);
+  g.start();
+  for (let i = 0; i < 95; i++) g.tick(1 / 30);
+  assert.equal(g.chat("v1", "Gifter", "drop", false).accepted, true);
+  assert.equal(g.state.drops.length, 1);
+  assert.equal(g.chat("v1", "Gifter", "drop", false).accepted, false, "per-viewer cooldown");
+  const crate = g.state.drops[0];
+  crate.kind = "nova";
+  crate.x = g.state.ship.x + 4;
+  crate.y = g.state.ship.y;
+  g.tick(1 / 30);
+  assert.equal(g.state.ship.powerup?.kind, "nova");
+  assert.equal(g.state.ship.powerup?.owner, "Gifter");
+  assert.equal(g.state.crew[0].points, 25);
+  g.state.rocks = [rockAhead(g, 300), rockAhead(g, 600), rockAhead(g, 900)];
+  g.input = { ...idle, use: true };
+  g.tick(1 / 30);
+  assert.equal(g.state.ship.powerup, null);
+  assert.ok(g.state.rocks.every((r) => r.hit), "nova clears the screen");
+  assert.ok(g.state.events.some((e) => e.type === "powerup" && e.name === "Gifter"));
+});
+test("!meteor warns, flies at the pilot, and can be shot down with the owner named", () => {
+  const g = launch("live");
+  g.state.rocks = [];
+  assert.equal(g.chat("t1", "Troll", "meteor", false).accepted, true);
+  const m = g.state.meteors[0];
+  assert.ok(m.warn > 0);
+  const startX = m.x;
+  g.tick(1 / 30);
+  assert.equal(m.x, startX, "it waits during the warning");
+  m.warn = 0;
+  m.y = g.state.ship.y;
+  m.vy = 0;
+  m.x = g.state.ship.x + 500;
+  g.input = { ...idle, fire: true };
+  for (let i = 0; i < 20 && g.state.meteors.length; i++) g.tick(1 / 30);
+  assert.equal(g.state.meteors.length, 0);
+  assert.ok(g.state.events.some((e) => e.type === "destroyed" && e.name === "Troll"));
+  assert.equal(g.chat("t1", "Troll", "meteor", false).accepted, false, "per-viewer cooldown");
+  assert.equal(parseCommand("!meteor incoming"), "meteor");
+  assert.equal(parseCommand("!drop"), "drop");
+});
+test("an unshot meteor hits the hull (shields first) and names who threw it", () => {
+  const g = launch("live");
+  g.state.rocks = [];
+  g.state.ship.shield = 0;
+  g.chat("t2", "Heckler", "meteor", false);
+  const m = g.state.meteors[0];
+  m.warn = 0;
+  m.x = g.state.ship.x + 30;
+  m.y = g.state.ship.y;
+  m.vy = 0;
+  g.tick(1 / 30);
+  assert.ok(g.state.ship.hull < 90);
+  assert.ok(g.state.events.some((e) => e.type === "hit" && e.name === "Heckler"));
 });
