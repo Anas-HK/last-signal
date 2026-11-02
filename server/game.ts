@@ -76,6 +76,7 @@ export class Game {
       distance: 0,
       ship: {
         speed: BALANCE.cruise,
+        afterburner: 0,
         x: 245,
         y: 330,
         vx: 0,
@@ -362,7 +363,9 @@ export class Game {
     s.elapsed += dt;
     const ship = s.ship;
     s.storm = s.distance > 2400 && s.distance < 4500;
-    const targetSpeed = ship.boost > 1 ? BALANCE.boosted : BALANCE.cruise;
+    const targetSpeed =
+      (ship.boost > 1 ? BALANCE.boosted : BALANCE.cruise) +
+      ship.afterburner * BALANCE.afterburner;
     ship.speed += (targetSpeed - ship.speed) * Math.min(1, dt * 4);
     s.distance += ship.speed * dt;
     ship.boost = Math.max(0, ship.boost - dt * 9);
@@ -382,9 +385,16 @@ export class Game {
       dy = clamp((target - ship.y) / 80, -1, 1);
       dx = (245 - ship.x) / 100;
     }
+    // Soft forward zone: thrust fades out over the last 140 units, so the ship eases to a
+    // stop instead of slamming into the edge. Pushing on at the front fires the afterburner.
+    const room = clamp((BALANCE.forwardLimit - ship.x) / 140, 0, 1);
+    const pushing = dx > 0 && ship.x > BALANCE.forwardLimit - 90;
+    ship.afterburner +=
+      ((pushing ? 1 : 0) - ship.afterburner) * Math.min(1, dt * (pushing ? 2.5 : 4));
+    if (dx > 0) dx *= room;
     ship.vx += (dx * 235 - ship.vx) * Math.min(1, dt * 9);
     ship.vy += (dy * 260 - ship.vy) * Math.min(1, dt * 9);
-    ship.x = clamp(ship.x + ship.vx * dt, 85, 960);
+    ship.x = clamp(ship.x + ship.vx * dt, 85, BALANCE.forwardLimit);
     ship.y = clamp(ship.y + ship.vy * dt, 85, WORLD.height - 80);
     for (const rock of s.rocks) {
       if (rock.hit) continue;

@@ -2,7 +2,7 @@
 
 **You fly. Chat keeps you alive.**
 
-A cooperative space rescue built for Twitch. The streamer pilots a damaged ship through an asteroid field. Viewers become its named crew, powering shields, firing engines, and repairing the hull from chat. Three people coordinating different stations create an **ALL HANDS** rescue pulse. Recover the escape pods before the jump window closes, then put the people who made it happen in the credits.
+A cooperative space rescue built for Twitch. The streamer pilots a damaged ship through an asteroid field. Viewers type `!join` to board before launch, then become its named crew, powering shields, firing engines, and repairing the hull from chat. Three people coordinating different stations create an **ALL HANDS** rescue pulse. Recover the escape pods before the jump window closes, then put the people who made it happen in the credits.
 
 Built with OpenAI Codex for the Codex × TwitchCon Hackathon. No paid inference service, game engine, or database is required to run it.
 
@@ -20,20 +20,22 @@ npm start
 
 Open **http://localhost:3001**. No credentials are needed for rehearsal.
 
-1. Leave **Simulated crew** on.
-2. Click **Launch rescue**, then click the flight screen.
-3. Fly with **WASD / arrow keys**. Enter the amber rings to rescue pods. **Space** pauses.
-4. Turn on **Training pilot** for a reproducible, hands-free rehearsal, or pilot yourself.
-5. Try the manual viewer controls below the flight screen. Every simulated action is visibly labeled.
+1. Click **Turn on sound & music** (browsers only allow audio after a click).
+2. Leave **Simulated crew** on. Optionally board a few viewers with the manual **!join** button to see the lobby fill.
+3. Click **Launch rescue**, then click the flight screen.
+4. Fly with **WASD / arrow keys**. Enter the amber rings to rescue pods. **Space** pauses. Hold **D** at the front of the zone to fire the afterburner.
+5. Turn on **Training pilot** for a reproducible, hands-free rehearsal, or pilot yourself.
+6. Try the manual viewer controls below the flight screen. Every simulated action is visibly labeled.
 
-The mission lasts up to 120 seconds. The training pilot with simulated crew completes the default seed in about 77 seconds, rescuing all 13 survivors. Collisions, shields, repairs, rescues, and the result are calculated by the game; the demonstration is not a scripted video or predetermined win.
+The mission lasts up to 120 seconds. The training pilot with simulated crew completes the default seed in about 75 seconds, rescuing all 13 survivors (measured 2026-11-02 after the polish pass). Collisions, shields, repairs, rescues, and the result are calculated by the game; the demonstration is not a scripted video or predetermined win.
 
 ## Twitch integration — no keys required
 
 1. Click **Connect Twitch**.
 2. Enter your channel name (for example, `your_channel`, without a URL).
 3. Click **Join live chat**. The app confirms the actual Twitch channel room ID.
-4. Launch a rescue and send `!shield`, `!boost`, or `!repair` in that Twitch chat after the countdown.
+4. Viewers type `!join` to board while you are on the launch screen; the lobby lists them on stream. Commands sent before launch or during the countdown precharge the ship.
+5. Launch a rescue. Viewers send `!shield`, `!boost`, or `!repair`. If a command cannot apply (hull already full, recharging, mission paused), the feed and the on-stream ticker say why.
 
 This path uses a **read-only anonymous connection to Twitch IRC**. It requires no application registration, client ID, client secret, or 2FA setup for the game connection. Viewers send messages through their ordinary Twitch accounts. The server never sends chat messages. A successful connection to `anashk123` was tested against Twitch on 2026-11-02; the complete command path is recorded in [VALIDATION.md](docs/VALIDATION.md).
 
@@ -72,9 +74,16 @@ Do not paste a secret into chat or commit `.env`. The server binds to loopback b
 
 | Chat command | Effect | Role |
 |---|---|---|
+| `!join` | Board the crew before launch; assigned to the least-staffed station | Fill the lobby; no charge spent |
 | `!shield` | +18 shield, capped at 100 | Absorb asteroid damage before hull damage |
-| `!boost` | +22 boost charge, capped at 100 | Increase travel speed while charge lasts |
+| `!boost` | +22 boost charge, capped at 100 | Nearly double travel speed while charge lasts |
 | `!repair` | Restore 8 hull, capped at 100 | Prevent a hull failure |
+
+Any words after the command are ignored, so `!boost go` works. Twitch can block a viewer from sending the exact same message twice in a row, so the on-stream footer tells viewers to add a word when repeating. Commands work in the lobby and during the countdown (precharging the ship).
+
+**Crew-scaled debris.** Asteroid damage scales with crew size: 34% with no crew, rising to full strength at five crew. The HUD shows the current level. Cruise speed alone reaches the jump gate in about 115 seconds, so a solo streamer or a small chat can finish, while a big chat faces the full storm. In simulation with a bot pilot (12 seeds per setting), a solo pilot finished about 1 in 4 runs, one viewer sending a command every 8 seconds finished 10 to 11 in 12, and three or more active viewers finished every run.
+
+**Afterburner.** The ship eases to a stop at the front of the flight zone instead of hitting the screen edge. Holding forward there fires an afterburner for extra speed, at the cost of less reaction time.
 
 Each viewer has a 1.8-second cooldown (displayed as approximately 2 seconds). The uplink accepts up to 15 commands per second and 500 unique crew members per mission. Full systems reject extra commands. Only accepted, effective contributions earn points. Ordinary chat is ignored by the game and is not displayed or stored.
 
@@ -92,6 +101,14 @@ Official resources used:
 - [Chat message subscription](https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#channelchatmessage)
 - [Creating subscriptions](https://dev.twitch.tv/docs/eventsub/manage-subscriptions/)
 
+## Sound
+
+Click **Turn on sound & music** on the launch screen or the speaker icon in the mission toolbar. The music is a synthwave loop generated live with Web Audio (no audio files, so no licensing questions): calm in the lobby, driving in flight, tenser in the debris storm, with a fanfare on victory and a sting on defeat. The music-note icon mutes only the music. The choice is remembered for the browser session. The OBS view stays silent so the stream does not capture the audio twice; capture the pilot console's audio instead.
+
+## Security model
+
+The server binds to `127.0.0.1` by default. Only a console on the same computer receives the control key; any other machine (if you widen `HOST`) gets a view-only page. Requests must use an allowlisted Host name, which blocks DNS-rebinding pages; add extra names with `ALLOWED_HOSTS=name:port,...`. State-changing requests also require an allowlisted Origin.
+
 ## OBS broadcast view
 
 Add a **Browser Source** with URL `http://localhost:3001/overlay`, width **1920**, height **1080**, and **60 fps**. Leave “Shutdown source when not visible” unchecked. The **Add to OBS** button provides the URL and settings.
@@ -108,7 +125,7 @@ npx playwright install chromium
 npm run test:e2e    # builds and launches an isolated server :3002
 ```
 
-Development UI: `http://localhost:5173`. For OAuth on Vite, set `APP_URL=http://localhost:5173` and register `http://localhost:5173/auth/twitch/callback` in Twitch. The Vite proxy forwards `/api`, `/auth`, and `/ws`. The production-style quickstart above is recommended for the demo.
+Development UI: `http://localhost:5173`. OAuth keeps the registered `http://localhost:3001/auth/twitch/callback`; after sign-in Twitch returns you to the page that started it (the Vite page in development, port 3001 in production). Only allowlisted origins are accepted as return targets. The Vite proxy forwards `/api`, `/auth`, and `/ws`. The production-style quickstart above is recommended for the demo. Set `E2E_PORT` to run the browser suite on another port.
 
 Browser tests cover actual keyboard movement, viewer input, pause/reset, source separation, setup dialogs, mobile overflow, unauthorized mutations, an entire real-time rescue, synchronized OBS results, and the downloadable mission report. The test server has Twitch credentials explicitly disabled. EventSub fixtures test authentication checks, subscription payloads, message deduplication, channel filtering, reconnection, and unsafe URL rejection. They do not claim to prove a live channel integration.
 
@@ -128,14 +145,16 @@ Twitch chat → IRC / EventSub → Twitch adapter → authoritative game engine
 - `server/index.ts`: local HTTP/WebSocket server, OAuth state, spectator permissions, reports.
 - `shared/types.ts`: typed protocol, state, and exact command parser.
 - `src/Space.tsx`: procedural Canvas spacecraft, planet, asteroids, named drones, particles, HUD.
-- `src/App.tsx`: pilot workflow, crew feed, setup, rehearsal controls, results, broadcast.
+- `src/App.tsx`: pilot workflow, lobby, crew feed, setup, rehearsal controls, results, broadcast.
+- `src/audio.ts`: synthesized soundtrack and sound effects (Web Audio, no audio files).
 
-Simulation runs at 30 Hz; snapshots are sent at 15 Hz and rendered with browser interpolation. All game rules run on the server. The default route uses a fixed seed so demos are repeatable. Session state is intentionally in memory; restarting the server resets the mission and Twitch connection. Only one active pilot controls the ship; another console can take over when the first stops sending input. There is no user-account service, database, public-hosting authentication, or mobile touch-flight controller.
+Simulation and snapshots run at 30 Hz. The browser extrapolates the ship from the newest snapshot and the pilot's held keys, so steering responds immediately while collisions stay server-authoritative. All game rules run on the server. The default route uses a fixed seed so demos are repeatable. Session state is intentionally in memory; restarting the server resets the mission and Twitch connection. Only one active pilot controls the ship; another console can take over when the first stops sending input. There is no user-account service, database, public-hosting authentication, or mobile touch-flight controller.
 
 ## Submission
 
 - [Project description](docs/PROJECT_DESCRIPTION.md)
-- Prepared demo MP4: `artifacts/demo/last-signal-demo.mp4` (2:32, full working rehearsal, captions and synthesized draft narration).
+- Demo video: **YouTube link to be added after upload.**
+- Prepared demo MP4: `artifacts/demo/last-signal-demo.mp4` (2:32, full working rehearsal recorded before the polish pass; captions and synthesized draft narration).
 - Downloadable demo and captions: [GitHub release](https://github.com/Anas-HK/last-signal/releases/tag/v0.1.0).
 - [Under-three-minute video script and recording instructions](docs/DEMO_SCRIPT.md)
 - [Submission checklist](docs/SUBMISSION.md)
@@ -146,4 +165,4 @@ Simulation runs at 30 Hz; snapshots are sent at 15 Hz and rendered with browser 
 
 ## Credits
 
-Product, implementation, tests, and iterative debugging were built in this Codex session. A [Superdesign draft](https://superdesign.dev/teams/e0cb2fff-718e-4bb7-8150-f93a155ef1ff/projects/597d54cc-621a-4534-98ae-35d2ab50face) supported the visual direction. The game artwork is procedural Canvas code. Fonts are bundled locally under their SIL Open Font Licenses in `public/fonts`. UI icons: Lucide (ISC). Application code: MIT.
+The original product, implementation, tests, and iterative debugging were built in this Codex session (see [CODEX_SESSION.md](docs/CODEX_SESSION.md)). Later polish commits are listed separately in the Git history. A [Superdesign draft](https://superdesign.dev/teams/e0cb2fff-718e-4bb7-8150-f93a155ef1ff/projects/597d54cc-621a-4534-98ae-35d2ab50face) supported the visual direction. The game artwork is procedural Canvas code. Fonts are bundled locally under their SIL Open Font Licenses in `public/fonts`. UI icons: Lucide (ISC). Application code: MIT.

@@ -1,11 +1,13 @@
 import { defineConfig } from "@playwright/test";
+// E2E_PORT lets a second checkout run the suite without colliding with another server.
+const port = process.env.E2E_PORT || "3002";
 export default defineConfig({
   testDir: "./tests/browser",
   timeout: 180000,
   workers: 1,
   reporter: "list",
   use: {
-    baseURL: "http://localhost:3002",
+    baseURL: `http://localhost:${port}`,
     viewport: { width: 1536, height: 1080 },
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
@@ -13,12 +15,12 @@ export default defineConfig({
   },
   webServer: {
     command: "npm run build && npm start",
-    url: "http://localhost:3002/api/health",
+    url: `http://localhost:${port}/api/health`,
     timeout: 60000,
     reuseExistingServer: false,
     env: {
-      PORT: "3002",
-      APP_URL: "http://localhost:3002",
+      PORT: port,
+      APP_URL: `http://localhost:${port}`,
       NODE_ENV: "production",
       TWITCH_CLIENT_ID: "",
       TWITCH_CLIENT_SECRET: "",

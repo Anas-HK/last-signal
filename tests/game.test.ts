@@ -243,3 +243,23 @@ test("chat bursts are rate limited and state storage remains bounded", () => {
   for (let i = 0; i < 200; i++) g.event("system", "test");
   assert.equal(g.state.events.length, 70);
 });
+test("holding forward eases into the front of the zone and fires the afterburner", () => {
+  const g = launch();
+  g.state.rocks = [];
+  g.input = { up: false, down: false, left: false, right: true };
+  let previous = g.state.ship.x;
+  let biggestStep = 0;
+  for (let i = 0; i < 150; i++) {
+    g.tick(1 / 30);
+    biggestStep = Math.max(biggestStep, g.state.ship.x - previous);
+    previous = g.state.ship.x;
+  }
+  assert.ok(g.state.ship.x <= BALANCE.forwardLimit);
+  assert.ok(g.state.ship.x > BALANCE.forwardLimit - 40);
+  assert.ok(g.state.ship.vx < 30, "the ship decelerates instead of slamming into the edge");
+  assert.ok(g.state.ship.afterburner > 0.9);
+  assert.ok(g.state.ship.speed > BALANCE.cruise + BALANCE.afterburner * 0.8);
+  g.input = { up: false, down: false, left: false, right: false };
+  for (let i = 0; i < 60; i++) g.tick(1 / 30);
+  assert.ok(g.state.ship.afterburner < 0.05);
+});

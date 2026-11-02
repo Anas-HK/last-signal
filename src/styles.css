@@ -115,7 +115,7 @@ p {
 .brand small {
   display: block;
   font-family: var(--mono);
-  font-size: 8px;
+  font-size: 11px;
   letter-spacing: 2.1px;
   color: #81949f;
   margin-top: 8px;
@@ -141,7 +141,7 @@ p {
 }
 .header-caption {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 1.3px;
   color: #607380;
   margin-right: 12px;
@@ -215,7 +215,7 @@ p {
   align-items: center;
   gap: 9px;
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.5;
   font-weight: 400;
   letter-spacing: 1.35px;
@@ -287,13 +287,13 @@ h1 > span {
   align-items: center;
   gap: 9px;
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 1px;
   white-space: nowrap;
 }
 .mission-title > small {
   color: #657783;
-  font-size: 8px;
+  font-size: 11px;
 }
 .toolbar-divider {
   color: #475661;
@@ -328,7 +328,7 @@ h1 > span {
   font-size: 17px;
 }
 .mission-time > small {
-  font-size: 7px;
+  font-size: 11px;
   letter-spacing: 1px;
   color: #71838e;
 }
@@ -411,7 +411,7 @@ h1 > span {
   display: block;
   color: #4d626d;
   font-family: var(--mono);
-  font-size: 8px;
+  font-size: 11px;
   letter-spacing: 1px;
   margin-top: 20px;
 }
@@ -439,7 +439,7 @@ h1 > span {
   width: 17px;
   height: 19px;
   font-family: var(--mono);
-  font-size: 8px;
+  font-size: 11px;
   border: 1px solid #586c7860;
   border-radius: 3px;
   color: #a9b8bd;
@@ -450,7 +450,7 @@ h1 > span {
   padding: 0 5px;
 }
 .pilot-hint > span:not(.keycap) {
-  font-size: 8px;
+  font-size: 11px;
   color: #a9b8bd;
   margin-left: 4px;
 }
@@ -505,7 +505,7 @@ h1 > span {
   align-items: center;
   gap: 7px;
   font-family: var(--mono);
-  font-size: 7px;
+  font-size: 11px;
   letter-spacing: 0.7px;
   color: #b9a27c;
   white-space: nowrap;
@@ -522,7 +522,7 @@ h1 > span {
   align-items: center;
   gap: 7px;
   color: #708591;
-  font-size: 9px;
+  font-size: 12px;
 }
 .playback-controls {
   display: flex;
@@ -537,7 +537,7 @@ h1 > span {
   background: none;
   color: #9caeb8;
   padding: 4px 0;
-  font-size: 10px;
+  font-size: 12px;
   white-space: nowrap;
 }
 .text-button:hover {
@@ -578,7 +578,7 @@ h1 > span {
   color: var(--station);
 }
 .station-value small {
-  font-size: 10px;
+  font-size: 12px;
   color: #687d89;
   margin-left: 2px;
 }
@@ -601,10 +601,10 @@ h1 > span {
 }
 .station-bottom code {
   color: var(--station);
-  font-size: 10px;
+  font-size: 12px;
 }
 .station-bottom > span {
-  font-size: 8px;
+  font-size: 11px;
   line-height: 1.5;
   color: #7b8d98;
 }
@@ -624,7 +624,7 @@ h1 > span {
   padding: 23px 20px 20px;
 }
 .crew-heading .eyebrow {
-  font-size: 7px;
+  font-size: 11px;
   letter-spacing: 1px;
 }
 .crew-heading h2 {
@@ -638,7 +638,7 @@ h1 > span {
 }
 .crew-count {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 12px;
   color: #82939e;
   border: 1px solid #34424d;
   padding: 3px 5px;
@@ -656,7 +656,7 @@ h1 > span {
   border-top: 1px solid #23313d;
   border-bottom: 1px solid #23313d;
   padding: 12px 0;
-  font-size: 9px;
+  font-size: 12px;
   color: #8c9daa;
 }
 .crew-source .status-dot {
@@ -666,7 +666,7 @@ h1 > span {
 .crew-source small {
   margin-left: auto;
   font-family: var(--mono);
-  font-size: 7px;
+  font-size: 11px;
   border: 1px solid #39443f;
   color: #b2a58b;
   padding: 2px 4px;
@@ -732,7 +732,7 @@ h1 > span {
   color: #d4dcd9;
 }
 .empty-crew p {
-  font-size: 10px;
+  font-size: 12px;
   color: #6f8593;
   line-height: 1.9;
   margin-top: 10px;
@@ -742,7 +742,7 @@ h1 > span {
   align-items: center;
   gap: 7px;
   font-family: var(--mono);
-  font-size: 8px;
+  font-size: 11px;
   letter-spacing: 0.5px;
   color: #5b707e;
   margin-top: 24px;
@@ -771,7 +771,7 @@ h1 > span {
   min-width: 0;
 }
 .feed-event strong {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 500;
   display: flex;
   align-items: center;
@@ -779,19 +779,19 @@ h1 > span {
   overflow-wrap: anywhere;
 }
 .feed-event strong small {
-  font-size: 6px;
+  font-size: 10px;
   letter-spacing: 0.6px;
   font-family: var(--mono);
   color: #657885;
 }
 .feed-event p {
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.6;
   color: #869ba8;
 }
 .feed-event time {
   font-family: var(--mono);
-  font-size: 7px;
+  font-size: 11px;
   color: #4d6371;
   flex-shrink: 0;
   padding-top: 3px;
@@ -809,13 +809,13 @@ h1 > span {
   gap: 15px;
   padding: 15px 20px;
   border-top: 1px solid var(--line);
-  font-size: 8px;
+  font-size: 11px;
   color: #6c8391;
 }
 .crew-total strong {
   color: #c5d0d1;
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 400;
   margin-right: 3px;
 }
@@ -825,7 +825,7 @@ h1 > span {
   background: #0b121b;
 }
 .rescue-manifest > .eyebrow {
-  font-size: 8px;
+  font-size: 11px;
   letter-spacing: 1px;
   margin-bottom: 12px;
   color: #627b8c;
@@ -833,7 +833,7 @@ h1 > span {
 }
 .rescue-manifest > .eyebrow > span {
   color: #c7b58e;
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0;
 }
 .manifest-row {
@@ -862,14 +862,14 @@ h1 > span {
 }
 .manifest-row > span:nth-child(2) {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0.7px;
   color: #abb7b7;
 }
 .manifest-row small {
   display: block;
   font-family: "Space Grotesk", sans-serif;
-  font-size: 8px;
+  font-size: 11px;
   letter-spacing: 0;
   color: #5b7484;
   margin-top: 4px;
@@ -877,7 +877,7 @@ h1 > span {
 .pod-status {
   margin-left: auto;
   font-family: var(--mono);
-  font-size: 7px;
+  font-size: 11px;
   letter-spacing: 0.7px;
   color: var(--amber);
 }
@@ -908,7 +908,7 @@ h1 > span {
 }
 .role-number {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 12px;
   color: var(--amber);
   border: 1px solid #f5b65d33;
   display: inline-flex;
@@ -929,7 +929,7 @@ h1 > span {
   color: #c1cecf;
 }
 .role-explainer p {
-  font-size: 9px;
+  font-size: 12px;
   color: #667f8f;
   margin-top: 3px;
 }
@@ -966,7 +966,7 @@ h1 > span {
 }
 .bench-label span {
   display: block;
-  font-size: 8px;
+  font-size: 11px;
   color: #627c8b;
   margin-top: 5px;
 }
@@ -979,7 +979,7 @@ h1 > span {
   display: flex;
   align-items: center;
   gap: 7px;
-  font-size: 9px;
+  font-size: 12px;
   color: #9baeb5;
   white-space: nowrap;
   cursor: pointer;
@@ -1038,13 +1038,13 @@ h1 > span {
   min-width: 0;
   width: 118px;
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 12px;
   padding: 8px;
   color: #bdcbd0;
 }
 .manual-button {
   font-family: var(--mono);
-  font-size: 8px;
+  font-size: 11px;
   background: #1b2d33;
   color: var(--cyan);
   padding: 8px;
@@ -1071,11 +1071,11 @@ h1 > span {
   align-items: center;
   justify-content: space-between;
   color: #526c7b;
-  font-size: 9px;
+  font-size: 12px;
 }
 .site-footer > span:first-child {
   font-family: var(--mono);
-  font-size: 8px;
+  font-size: 11px;
   letter-spacing: 1.2px;
 }
 .footer-cross {
@@ -1091,7 +1091,7 @@ h1 > span {
   margin: 0 10px;
 }
 .site-footer .text-button {
-  font-size: 9px;
+  font-size: 12px;
 }
 .modal-backdrop {
   position: fixed;
@@ -1173,7 +1173,7 @@ h1 > span {
 }
 .code-block {
   display: block;
-  font-size: 10px !important;
+  font-size: 12px !important;
   word-break: break-all;
   background: #18232d;
   padding: 10px;
@@ -1187,11 +1187,11 @@ h1 > span {
   display: flex;
   align-items: center;
   gap: 7px;
-  font-size: 9px;
+  font-size: 12px;
   color: #71b6a9;
 }
 .modal-footnote {
-  font-size: 10px !important;
+  font-size: 12px !important;
   color: #617d8e !important;
   margin-top: 18px !important;
 }
@@ -1240,7 +1240,7 @@ h1 > span {
 }
 .channel-form .button {
   white-space: nowrap;
-  font-size: 10px;
+  font-size: 12px;
 }
 .manual-section {
   display: flex;
@@ -1261,7 +1261,7 @@ h1 > span {
 }
 .field-label {
   font-family: var(--mono);
-  font-size: 8px;
+  font-size: 11px;
   letter-spacing: 1px;
   color: #8299a7;
   display: block;
@@ -1278,7 +1278,7 @@ h1 > span {
   border: 1px solid #354b59;
   padding: 10px;
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 12px;
   color: #c5d7dc;
 }
 .copy-field .button {
@@ -1295,7 +1295,7 @@ h1 > span {
 }
 .broadcast-specs > span {
   font-family: var(--mono);
-  font-size: 8px;
+  font-size: 11px;
   letter-spacing: 1px;
   color: #607e90;
   width: 33.3%;
@@ -1390,7 +1390,7 @@ h1 > span {
   border-color: #c19c9544;
 }
 .results-layer .eyebrow {
-  font-size: 8px;
+  font-size: 11px;
   justify-content: center;
   color: var(--amber);
   letter-spacing: 1.5px;
@@ -1414,7 +1414,7 @@ h1 > span {
 }
 .result-stats > span {
   font-family: var(--mono);
-  font-size: 7px;
+  font-size: 11px;
   letter-spacing: 0.7px;
   color: #688491;
 }
@@ -1431,7 +1431,7 @@ h1 > span {
   max-width: 670px;
 }
 .mission-credits > .eyebrow {
-  font-size: 7px;
+  font-size: 11px;
   color: #5e7b8b;
   letter-spacing: 1.5px;
 }
@@ -1444,10 +1444,10 @@ h1 > span {
 }
 .mission-credits > div > span {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 12px;
 }
 .mission-credits small {
-  font-size: 6px;
+  font-size: 10px;
   color: #627e8e;
   margin-left: 5px;
 }
@@ -1458,13 +1458,13 @@ h1 > span {
 }
 .result-actions .button {
   min-height: 35px;
-  font-size: 10px;
+  font-size: 12px;
   padding: 9px 14px;
 }
 .result-source {
   margin-top: 20px;
   font-family: var(--mono);
-  font-size: 6px;
+  font-size: 10px;
   letter-spacing: 1.3px;
   color: #5a7280;
 }
@@ -1516,7 +1516,7 @@ h1 > span {
   align-items: center;
   gap: 10px;
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 12px;
   color: var(--amber);
   border: 1px solid #f5b65d33;
   padding: 10px 14px;
@@ -1559,7 +1559,7 @@ h1 > span {
   gap: 25px;
 }
 .broadcast-instructions > span {
-  font-size: 10px;
+  font-size: 12px;
   font-family: var(--mono);
   letter-spacing: 1px;
   color: #b8c9ca;
@@ -1626,19 +1626,19 @@ h1 > span {
     padding: 15px 0;
   }
   .feed-event time {
-    font-size: 9px;
+    font-size: 12px;
   }
   .mission-title {
-    font-size: 10px;
+    font-size: 12px;
   }
   .source-label {
-    font-size: 8px;
+    font-size: 11px;
   }
   .mission-objective {
-    font-size: 10px;
+    font-size: 12px;
   }
   .station-bottom > span {
-    font-size: 10px;
+    font-size: 12px;
   }
   .station-bottom code {
     font-size: 12px;
@@ -1656,13 +1656,13 @@ h1 > span {
     font-size: 12px;
   }
   .bench-label span {
-    font-size: 10px;
+    font-size: 12px;
   }
   .switch-label {
     font-size: 11px;
   }
   .manual-button {
-    font-size: 10px;
+    font-size: 12px;
   }
   .manual-command input {
     font-size: 11px;
@@ -1681,10 +1681,10 @@ h1 > span {
     font-size: 11px;
   }
   .manifest-row small {
-    font-size: 10px;
+    font-size: 12px;
   }
   .pod-status {
-    font-size: 9px;
+    font-size: 12px;
   }
   .role-explainer strong {
     font-size: 13px;
@@ -1720,17 +1720,17 @@ h1 > span {
     gap: 8px;
   }
   .mission-title {
-    font-size: 8px;
+    font-size: 11px;
   }
   .crew-heading {
     padding: 19px 16px;
   }
   .crew-heading .eyebrow {
-    font-size: 6px;
+    font-size: 10px;
   }
   .crew-source {
     margin: 0 16px;
-    font-size: 8px;
+    font-size: 11px;
   }
   .crew-feed {
     padding: 6px 16px;
@@ -1749,7 +1749,7 @@ h1 > span {
   }
   .crew-total {
     padding: 12px 16px;
-    font-size: 7px;
+    font-size: 11px;
     gap: 8px;
   }
   .rescue-manifest {
@@ -1762,7 +1762,7 @@ h1 > span {
     gap: 7px;
   }
   .station-bottom > span {
-    font-size: 7px;
+    font-size: 11px;
   }
   .stage-intro {
     top: 15%;
@@ -1777,11 +1777,11 @@ h1 > span {
     margin-top: 17px;
     min-height: 36px;
     padding: 10px 13px;
-    font-size: 10px;
+    font-size: 12px;
   }
   .stage-coordinate {
     margin-top: 14px;
-    font-size: 6px;
+    font-size: 10px;
   }
   .rehearsal-bench {
     flex-wrap: wrap;
@@ -1802,10 +1802,10 @@ h1 > span {
     gap: 9px;
   }
   .role-explainer p {
-    font-size: 8px;
+    font-size: 11px;
   }
   .role-explainer strong {
-    font-size: 10px;
+    font-size: 12px;
   }
   .result-medallion {
     height: 35px;
@@ -1831,7 +1831,7 @@ h1 > span {
     gap: 5px 9px;
   }
   .mission-credits > div > span {
-    font-size: 7px;
+    font-size: 11px;
   }
   .result-actions {
     margin-top: 15px;
@@ -1862,7 +1862,7 @@ h1 > span {
   }
   .mode-selector button {
     padding: 8px;
-    font-size: 10px;
+    font-size: 12px;
   }
   .stage-intro {
     top: 20%;
@@ -1874,23 +1874,23 @@ h1 > span {
     font-size: 13px;
   }
   .stage-coordinate {
-    font-size: 8px;
+    font-size: 11px;
   }
   .stage-intro .launch-button {
     font-size: 12px;
     padding: 12px 17px;
   }
   .station-bottom > span {
-    font-size: 9px;
+    font-size: 12px;
   }
   .mission-objective {
     display: flex;
   }
   .bench-label span {
-    font-size: 9px;
+    font-size: 12px;
   }
   .role-explainer p {
-    font-size: 9px;
+    font-size: 12px;
   }
   .role-explainer strong {
     font-size: 11px;
@@ -1899,10 +1899,10 @@ h1 > span {
     margin: 0 10px;
   }
   .broadcast-link {
-    font-size: 10px;
+    font-size: 12px;
   }
   .site-footer > span:nth-child(2) {
-    font-size: 8px;
+    font-size: 11px;
   }
   .results-layer h2 {
     font-size: 34px;
@@ -1919,7 +1919,7 @@ h1 > span {
     font-size: 25px;
   }
   .mission-credits > div > span {
-    font-size: 9px;
+    font-size: 12px;
   }
   .result-actions {
     margin-top: 18px;
@@ -1935,7 +1935,7 @@ h1 > span {
     gap: 9px;
   }
   .brand small {
-    font-size: 6px;
+    font-size: 10px;
     letter-spacing: 1.5px;
     margin-top: 7px;
   }
@@ -1954,7 +1954,7 @@ h1 > span {
     display: none;
   }
   .twitch-button {
-    font-size: 10px;
+    font-size: 12px;
     gap: 8px;
     padding: 9px 11px;
     min-height: 36px;
@@ -1979,7 +1979,7 @@ h1 > span {
     margin-top: 4px;
   }
   .mission-heading .eyebrow {
-    font-size: 7px;
+    font-size: 11px;
   }
   .mode-selector {
     display: inline-flex;
@@ -1996,7 +1996,7 @@ h1 > span {
     gap: 4px;
   }
   .mission-title {
-    font-size: 7px;
+    font-size: 11px;
     gap: 6px;
   }
   .mission-time {
@@ -2018,7 +2018,7 @@ h1 > span {
     top: 15%;
   }
   .stage-intro .eyebrow {
-    font-size: 6px;
+    font-size: 10px;
   }
   .stage-intro h2 {
     font-size: 34px;
@@ -2028,11 +2028,11 @@ h1 > span {
     font-size: 11px;
   }
   .stage-coordinate {
-    font-size: 6px;
+    font-size: 10px;
     margin-top: 15px;
   }
   .stage-intro .launch-button {
-    font-size: 10px;
+    font-size: 12px;
     min-height: 36px;
     padding: 10px 13px;
     margin-top: 15px;
@@ -2042,7 +2042,7 @@ h1 > span {
     min-height: 36px;
   }
   .source-label {
-    font-size: 6px;
+    font-size: 10px;
   }
   .mission-objective {
     display: none;
@@ -2060,13 +2060,13 @@ h1 > span {
     gap: 5px;
   }
   .station-name {
-    font-size: 9px;
+    font-size: 12px;
   }
   .station-value {
     font-size: 11px;
   }
   .station-value small {
-    font-size: 7px;
+    font-size: 11px;
   }
   .station-meter {
     margin-top: 10px;
@@ -2077,11 +2077,11 @@ h1 > span {
     display: block;
   }
   .station-bottom code {
-    font-size: 8px;
+    font-size: 11px;
   }
   .station-bottom > span {
     display: block;
-    font-size: 7px;
+    font-size: 11px;
     margin-top: 5px;
   }
   .under-flight {
@@ -2097,22 +2097,22 @@ h1 > span {
   .role-number {
     width: 22px;
     height: 22px;
-    font-size: 8px;
+    font-size: 11px;
   }
   .role-explainer > div {
     width: calc(100% - 40px);
   }
   .role-explainer strong {
-    font-size: 10px;
+    font-size: 12px;
   }
   .role-explainer p {
-    font-size: 8px;
+    font-size: 11px;
   }
   .role-separator {
     display: none;
   }
   .broadcast-link {
-    font-size: 8px;
+    font-size: 11px;
     gap: 5px;
     align-self: flex-start;
     margin-top: 4px;
@@ -2137,7 +2137,7 @@ h1 > span {
     gap: 22px;
   }
   .switch-label {
-    font-size: 9px;
+    font-size: 12px;
   }
   .manual-command {
     margin-left: 0;
@@ -2149,7 +2149,7 @@ h1 > span {
     width: 80px;
   }
   .manual-button {
-    font-size: 7px;
+    font-size: 11px;
     padding: 8px 6px;
   }
   .site-footer {
@@ -2159,14 +2159,14 @@ h1 > span {
     flex-wrap: wrap;
   }
   .site-footer > span:first-child {
-    font-size: 7px;
+    font-size: 11px;
   }
   .site-footer > span:nth-child(2) {
     order: 3;
     width: 100%;
   }
   .site-footer .text-button {
-    font-size: 8px;
+    font-size: 11px;
   }
   .site-footer > span:first-child .footer-cross {
     margin-right: 4px;
@@ -2184,13 +2184,13 @@ h1 > span {
     font-size: 11px;
   }
   .modal-footnote {
-    font-size: 9px !important;
+    font-size: 12px !important;
   }
   .setup-instructions {
     padding: 15px;
   }
   .code-block {
-    font-size: 8px !important;
+    font-size: 11px !important;
   }
   .result-medallion {
     height: 30px;
@@ -2198,7 +2198,7 @@ h1 > span {
     margin-bottom: 10px;
   }
   .results-layer .eyebrow {
-    font-size: 5px;
+    font-size: 9px;
     letter-spacing: 0.7px;
   }
   .results-layer h2 {
@@ -2206,7 +2206,7 @@ h1 > span {
     letter-spacing: -1px;
   }
   .results-layer > p {
-    font-size: 8px;
+    font-size: 11px;
     max-width: 260px;
   }
   .result-stats {
@@ -2214,13 +2214,13 @@ h1 > span {
     padding: 13px 0;
   }
   .result-stats > span {
-    font-size: 5px;
+    font-size: 9px;
   }
   .result-stats strong {
     font-size: 20px;
   }
   .mission-credits > div > span {
-    font-size: 6px;
+    font-size: 10px;
   }
   .mission-credits small {
     display: none;
@@ -2233,13 +2233,13 @@ h1 > span {
     margin-top: 13px;
   }
   .result-actions .button {
-    font-size: 8px;
+    font-size: 11px;
     padding: 8px 10px;
     gap: 5px;
     min-height: 31px;
   }
   .result-source {
-    font-size: 5px;
+    font-size: 9px;
     letter-spacing: 0.5px;
   }
   .pilot-hint {
@@ -2258,7 +2258,7 @@ h1 > span {
     display: none;
   }
   .source-pill {
-    font-size: 6px;
+    font-size: 10px;
     padding: 7px;
   }
   .broadcast-timer {
@@ -2274,11 +2274,11 @@ h1 > span {
     display: none;
   }
   .broadcast-instructions code {
-    font-size: 10px;
+    font-size: 12px;
   }
   .broadcast-view > footer {
     height: 45px;
-    font-size: 6px;
+    font-size: 10px;
   }
   .broadcast-view .space-canvas {
     object-fit: contain;
@@ -2294,7 +2294,7 @@ h1 > span {
     font-size: 30px;
   }
   .broadcast-view .stage-intro > p {
-    font-size: 10px;
+    font-size: 12px;
   }
   .broadcast-view .stage-coordinate {
     display: none;
@@ -2309,43 +2309,43 @@ h1 > span {
 
 /* Legible functional controls and coordinated crew feedback. */
 .header-caption {
-  font-size: 10px;
+  font-size: 12px;
 }
 .eyebrow {
-  font-size: 10px;
+  font-size: 12px;
 }
 .brand small {
-  font-size: 9px;
+  font-size: 12px;
 }
 .mission-title {
-  font-size: 10px;
+  font-size: 12px;
 }
 .mission-title > small {
-  font-size: 9px;
+  font-size: 12px;
 }
 .mission-time > small {
-  font-size: 8px;
+  font-size: 11px;
 }
 .source-label {
-  font-size: 9px;
+  font-size: 12px;
 }
 .mission-objective {
-  font-size: 10px;
+  font-size: 12px;
 }
 .station-bottom > span {
-  font-size: 10px;
+  font-size: 12px;
 }
 .station-bottom code {
   font-size: 11px;
 }
 .crew-heading .eyebrow {
-  font-size: 8px;
+  font-size: 11px;
 }
 .crew-source {
-  font-size: 10px;
+  font-size: 12px;
 }
 .crew-source small {
-  font-size: 8px;
+  font-size: 11px;
 }
 .empty-crew h3 {
   font-size: 13px;
@@ -2354,7 +2354,7 @@ h1 > span {
   font-size: 12px;
 }
 .feed-waiting {
-  font-size: 9px;
+  font-size: 12px;
 }
 .feed-event p {
   font-size: 11px;
@@ -2363,28 +2363,28 @@ h1 > span {
   font-size: 12px;
 }
 .feed-event strong small {
-  font-size: 7px;
+  font-size: 11px;
 }
 .feed-event time {
-  font-size: 8px;
+  font-size: 11px;
 }
 .crew-total {
-  font-size: 9px;
+  font-size: 12px;
 }
 .crew-total strong {
   font-size: 11px;
 }
 .rescue-manifest > .eyebrow {
-  font-size: 9px;
+  font-size: 12px;
 }
 .manifest-row > span:nth-child(2) {
-  font-size: 10px;
+  font-size: 12px;
 }
 .manifest-row small {
-  font-size: 10px;
+  font-size: 12px;
 }
 .pod-status {
-  font-size: 8px;
+  font-size: 11px;
 }
 .role-explainer strong {
   font-size: 12px;
@@ -2396,7 +2396,7 @@ h1 > span {
   font-size: 12px;
 }
 .bench-label span {
-  font-size: 10px;
+  font-size: 12px;
 }
 .switch-label {
   font-size: 11px;
@@ -2406,16 +2406,16 @@ h1 > span {
   width: 130px;
 }
 .manual-button {
-  font-size: 10px;
+  font-size: 12px;
 }
 .site-footer {
-  font-size: 10px;
+  font-size: 12px;
 }
 .site-footer > span:first-child {
-  font-size: 9px;
+  font-size: 12px;
 }
 .site-footer .text-button {
-  font-size: 10px;
+  font-size: 12px;
 }
 .all-hands {
   display: flex;
@@ -2433,7 +2433,7 @@ h1 > span {
 }
 .all-hands strong {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 1px;
   font-weight: 400;
   color: #9cb8b4;
@@ -2448,7 +2448,7 @@ h1 > span {
   align-items: center;
   gap: 4px;
   font-family: var(--mono);
-  font-size: 8px;
+  font-size: 11px;
   color: #506874;
 }
 .sync-links > span > span {
@@ -2465,13 +2465,13 @@ h1 > span {
   box-shadow: 0 0 9px var(--link);
 }
 .all-hands-description {
-  font-size: 9px;
+  font-size: 12px;
   color: #66838f;
   margin-left: 5px;
 }
 .sync-count {
   font-family: var(--mono);
-  font-size: 8px;
+  font-size: 11px;
   color: #64847f;
   margin-left: auto;
 }
@@ -2488,7 +2488,7 @@ h1 > span {
 }
 @media (max-width: 1200px) {
   .all-hands-description {
-    font-size: 8px;
+    font-size: 11px;
   }
   .sync-links {
     gap: 7px;
@@ -2501,22 +2501,22 @@ h1 > span {
     display: none;
   }
   .station-bottom > span {
-    font-size: 9px;
+    font-size: 12px;
   }
   .source-label {
-    font-size: 8px;
+    font-size: 11px;
   }
   .crew-source {
-    font-size: 9px;
+    font-size: 12px;
   }
   .feed-event p {
-    font-size: 10px;
+    font-size: 12px;
   }
   .feed-event strong {
     font-size: 11px;
   }
   .role-explainer p {
-    font-size: 10px;
+    font-size: 12px;
   }
   .rehearsal-bench {
     gap: 16px;
@@ -2524,74 +2524,74 @@ h1 > span {
 }
 @media (max-width: 640px) {
   .brand small {
-    font-size: 6px;
+    font-size: 10px;
   }
   .mission-heading .eyebrow {
-    font-size: 8px;
+    font-size: 11px;
   }
   .mission-title {
-    font-size: 7px;
+    font-size: 11px;
   }
   .source-label {
-    font-size: 7px;
+    font-size: 11px;
   }
   .station-bottom > span {
-    font-size: 8px;
+    font-size: 11px;
   }
   .station-bottom code {
-    font-size: 9px;
+    font-size: 12px;
   }
   .station-name {
-    font-size: 9px;
+    font-size: 12px;
   }
   .all-hands {
     padding: 10px;
     gap: 7px;
   }
   .all-hands strong {
-    font-size: 8px;
+    font-size: 11px;
   }
   .sync-links > span {
-    font-size: 7px;
+    font-size: 11px;
   }
   .all-hands-description {
     margin-left: 0;
-    font-size: 8px;
+    font-size: 11px;
     width: 100%;
   }
   .bench-label span {
-    font-size: 10px;
+    font-size: 12px;
   }
   .bench-switches {
     gap: 15px;
   }
   .switch-label {
-    font-size: 10px;
+    font-size: 12px;
   }
   .manual-button {
-    font-size: 8px;
+    font-size: 11px;
   }
   .manual-command input {
-    font-size: 9px;
+    font-size: 12px;
     width: 80px;
   }
   .role-explainer strong {
     font-size: 11px;
   }
   .role-explainer p {
-    font-size: 9px;
+    font-size: 12px;
   }
   .site-footer > span:first-child {
-    font-size: 7px;
+    font-size: 11px;
   }
   .site-footer .text-button {
-    font-size: 8px;
+    font-size: 11px;
   }
   .eyebrow {
-    font-size: 9px;
+    font-size: 12px;
   }
   .stage-intro .eyebrow {
-    font-size: 6px;
+    font-size: 10px;
   }
 }
 .anonymous-form {
@@ -2607,7 +2607,7 @@ h1 > span {
   margin-bottom: 10px;
 }
 .anonymous-form .setup-note {
-  font-size: 10px;
+  font-size: 12px;
   margin-top: 15px;
   padding-top: 13px;
   border-color: #294746;
@@ -2636,12 +2636,12 @@ h1 > span {
     flex-wrap: wrap;
   }
   .anonymous-form .button {
-    font-size: 9px;
+    font-size: 12px;
     padding: 10px;
     gap: 5px;
   }
   .anonymous-form .setup-note {
-    font-size: 8px;
+    font-size: 11px;
   }
 }
 .live-feedback {
@@ -2670,12 +2670,12 @@ h1 > span {
   margin-left: auto;
   white-space: nowrap;
   font-family: var(--mono);
-  font-size: 8px;
+  font-size: 11px;
   color: #5f8d81;
 }
 @media (max-width: 640px) {
   .live-feedback {
-    font-size: 10px;
+    font-size: 12px;
     align-items: flex-start;
   }
   .live-feedback small {

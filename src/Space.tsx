@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { GameState, Input } from "../shared/types";
-import { COLORS, WORLD } from "../shared/types";
+import { BALANCE, COLORS, WORLD } from "../shared/types";
 import { playSound } from "./audio";
 
 type Props = {
@@ -21,6 +21,13 @@ type Particle = {
   color: string;
   r: number;
 };
+/** Short-lived callouts and shockwaves spawned from authoritative game events. */
+type Float = { text: string; sub?: string; color: string; born: number; x: number; y: number; big?: boolean; attached?: boolean };
+type Ring = { x: number; y: number; color: string; born: number; life: number; from: number; to: number; width: number; hex?: boolean; attached?: boolean };
+type Ticker = { name: string; text: string; color: string; born: number; dim?: boolean };
+const reduceMotion =
+  typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+const clampN = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 const stars = Array.from({ length: 210 }, (_, i) => ({
   x: ((i * 7919 + 41) % 12000) / 10,
   y: ((i * 3319 + 127) % 6600) / 10,
@@ -52,7 +59,8 @@ function label(
   size = 10,
   align: CanvasTextAlign = "left",
 ) {
-  ctx.font = `${size}px "JetBrains Mono", monospace`;
+  // Scaled up for stream legibility: the canvas is shown at roughly 0.8x in the console.
+  ctx.font = `${Math.max(11, Math.round(size * 1.25))}px "JetBrains Mono", monospace`;
   ctx.textAlign = align;
   ctx.fillStyle = color;
   ctx.fillText(text, x, y);
@@ -93,7 +101,12 @@ function glow(
 export function Space({ game, onInput, onPause, spectator }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const latest = useRef(game);
+  // Arrival time of the newest snapshot: the renderer extrapolates from it (dead reckoning)
+  // so the ship tracks the server position instead of trailing behind it.
+  const receivedAt = useRef(performance.now());
+  if (latest.current !== game) receivedAt.current = performance.now();
   latest.current = game;
+  const localInput = useRef<Input | null>(null);
   const inputCallback = useRef(onInput);
   inputCallback.current = onInput;
   const pauseCallback = useRef(onPause);
@@ -111,6 +124,38 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
     let particles: Particle[] = [];
     let impactAt = -10,
       impactBlocked = false;
+    let floats: Float[] = [];
+    let rings: Ring[] = [];
+    let ticker: Ticker[] = [];
+    let shakeAt = -10,
+      shakePower = 0;
+    let flashAt = -10,
+      flashColor = "#fb7c70",
+      flashPower = 0;
+    let boostAt = -10,
+      shieldAt = -10;
+    let lastCount = 0;
+    let lastCallout = -10;
+    // Crew callouts ride above the ship; one every 1.4 s keeps a busy chat readable
+    // (the ticker still names every action).
+    const callout = (f: Float) => {
+      if (elapsed - lastCallout < 1.4) return;
+      lastCallout = elapsed;
+      shout({ ...f, attached: true });
+    };
+    // One callout per message: a repeat refreshes the existing one instead of stacking.
+    const shout = (f: Float) => {
+      const twin = floats.find((o) => o.text === f.text && elapsed - o.born < 1.2);
+      if (twin) {
+        twin.born = elapsed;
+        twin.sub = f.sub;
+      } else floats.push(f);
+    };
+    // Ship-centred rings follow the ship and never double up within half a second.
+    const pulse = (r: Ring) => {
+      if (r.attached && rings.some((o) => o.attached && o.color === r.color && elapsed - o.born < 0.5)) return;
+      rings.push(r);
+    };
     const resize = () => {
       const dpr = Math.min(devicePixelRatio || 1, 2);
       el.width = W * dpr;
@@ -125,24 +170,67 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
       const s = latest.current;
       const active = s.phase === "running" && s.countdown <= 0;
       const velocity = s.ship.speed ?? (s.ship.boost > 1 ? 79 : 53);
-      const boostRatio = Math.max(0, Math.min(1, (velocity - 53) / 52));
+      const burn = s.ship.afterburner ?? 0;
+      const boostRatio = clampN(
+        (velocity - BALANCE.cruise - burn * BALANCE.afterburner) /
+          (BALANCE.boosted - BALANCE.cruise),
+        0,
+        1,
+      );
+      const streak = Math.max(boostRatio, burn * 0.75);
       if (id !== s.id) {
+        const firstLoad = id === "";
         id = s.id;
-        eventId = 0;
         particles = [];
+        floats = [];
+        rings = [];
+        ticker = [];
         shipX = s.ship.x;
         shipY = s.ship.y;
         distance = s.distance;
+        // Opening the page mid-mission must not replay old effects or sounds.
+        eventId = firstLoad ? (s.events.at(-1)?.id ?? 0) : 0;
+        if (firstLoad)
+          for (const e of s.events.slice(-4))
+            if (e.name)
+              ticker.push({ name: e.name, text: e.text, color: e.color || "#8b9aa4", born: elapsed, dim: e.type === "rejected" });
       }
-      const lerp = Math.min(1, dt * 18);
-      shipX += ((s.phase === "ready" ? 720 : s.ship.x) - shipX) * lerp;
-      shipY += ((s.phase === "ready" ? 380 : s.ship.y) - shipY) * lerp;
-      distance += (s.distance - distance) * lerp;
+      // Dead reckoning: extrapolate the last snapshot by its age, and for the pilot apply the
+      // keys being held right now. The server stays authoritative; this only hides latency.
+      const running = s.phase === "running" && s.countdown <= 0;
+      const age = running ? Math.min(0.1, (now - receivedAt.current) / 1000) : 0;
+      let vx = s.ship.vx,
+        vy = s.ship.vy;
+      const keys = localInput.current;
+      if (keys && running) {
+        const k = Math.min(1, age * 9);
+        vx += ((Number(keys.right) - Number(keys.left)) * 235 - vx) * k;
+        vy += ((Number(keys.down) - Number(keys.up)) * 260 - vy) * k;
+      }
+      const predX = clampN(s.ship.x + ((s.ship.vx + vx) / 2) * age, 85, BALANCE.forwardLimit);
+      const predY = clampN(s.ship.y + ((s.ship.vy + vy) / 2) * age, 85, H - 80);
+      const predD = s.distance + (s.ship.speed ?? 60) * age;
+      const lerp = Math.min(1, dt * 24);
+      shipX += ((s.phase === "ready" ? 720 : predX) - shipX) * lerp;
+      shipY += ((s.phase === "ready" ? 380 : predY) - shipY) * lerp;
+      distance += (predD - distance) * Math.min(1, dt * 30);
       const dpr = el.width / W;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, W, H);
       ctx.fillStyle = "#070d15";
       ctx.fillRect(0, 0, W, H);
+      // Screen shake for impacts (skipped for reduced-motion users).
+      const shakeAge = elapsed - shakeAt;
+      const shake =
+        !reduceMotion && shakeAge < 0.45 ? shakePower * (1 - shakeAge / 0.45) : 0;
+      ctx.save();
+      if (shake) ctx.translate((Math.random() * 2 - 1) * shake, (Math.random() * 2 - 1) * shake);
+      const zoom = 1 + (active ? burn * 0.035 + boostRatio * 0.015 : 0);
+      if (zoom > 1.001) {
+        ctx.translate(shipX, shipY);
+        ctx.scale(zoom, zoom);
+        ctx.translate(-shipX, -shipY);
+      }
       glow(ctx, 870, 180, 550, "#12333b45");
       glow(ctx, 70, 620, 380, "#29314435");
       // A distant ringed world: entirely procedural, no asset or network dependency.
@@ -173,12 +261,12 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
         const x = (((star.x - offset) % W) + W) % W;
         ctx.globalAlpha =
           star.alpha * (0.85 + Math.sin(elapsed + star.x) * 0.15);
-        if (active && boostRatio > 0.05) {
+        if (active && streak > 0.05) {
           ctx.strokeStyle = "#bcd9d8";
           ctx.lineWidth = star.r;
           ctx.beginPath();
           ctx.moveTo(x, star.y);
-          ctx.lineTo(x + boostRatio * (20 + star.r * 20), star.y);
+          ctx.lineTo(x + streak * (20 + star.r * 20), star.y);
           ctx.stroke();
         } else circle(ctx, x, star.y, star.r, "#bcd9d8");
       }
@@ -336,7 +424,26 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
         label(ctx, "JUMP GATE // HOME", x, 95, "#70ead8", 13, "center");
       }
       // Engine trails.
-      const thrust = active ? 1 + boostRatio * 2.3 : 0.45;
+      const thrust = active ? 1 + boostRatio * 2.3 + burn * 1.2 : 0.45;
+      if (active && burn > 0.05) {
+        glow(ctx, shipX - 70, shipY, 120 + burn * 60, `rgba(150,225,255,${0.16 * burn})`);
+        for (let n = 0; n < 2; n++) {
+          const y = shipY + (n ? 17 : -17);
+          const core = ctx.createLinearGradient(shipX - 200 * burn, y, shipX - 30, y);
+          core.addColorStop(0, "transparent");
+          core.addColorStop(0.6, `rgba(150,225,255,${0.35 * burn})`);
+          core.addColorStop(1, `rgba(235,250,255,${0.95 * burn})`);
+          polygon(
+            ctx,
+            [
+              [shipX - 30, y - 3.5],
+              [shipX - 60 - 150 * burn - Math.sin(elapsed * 33 + n) * 12, y],
+              [shipX - 30, y + 3.5],
+            ],
+            core as unknown as string,
+          );
+        }
+      }
       if (active && boostRatio > 0.1)
         glow(ctx, shipX - 50, shipY, 100 + boostRatio * 45, "#f5b65d18");
       for (let n = 0; n < 2; n++) {
@@ -394,7 +501,7 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
           ctx,
           "ALL HANDS // RESCUE PULSE",
           W / 2,
-          116,
+          124,
           "#70ead8",
           16,
           "center",
@@ -403,15 +510,16 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
           ctx,
           "TRACTOR RANGE DOUBLED · CREW SYNC ACTIVE",
           W / 2,
-          137,
+          148,
           "#9abfb7",
           9,
           "center",
         );
       }
-      if (s.ship.shield > 2) {
-        const shield = s.ship.shield / 100;
-        glow(ctx, shipX, shipY, 95, `rgba(112,234,216,${shield * 0.09})`);
+      const surge = Math.max(0, 1 - (elapsed - shieldAt) / 0.7);
+      if (s.ship.shield > 2 || surge > 0) {
+        const shield = Math.min(1, s.ship.shield / 100 + surge * 0.6);
+        glow(ctx, shipX, shipY, 95 + surge * 30, `rgba(112,234,216,${shield * 0.09 + surge * 0.18})`);
         ctx.save();
         ctx.translate(shipX, shipY);
         ctx.scale(1.35, 1);
@@ -504,15 +612,8 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
       ctx.fillRect(-34, 12, 12, 9);
       ctx.restore();
       ctx.globalAlpha = 1;
-      label(
-        ctx,
-        "RSV-01  /  YOUR SHIP",
-        shipX,
-        shipY + 72,
-        "#c4cec9",
-        9,
-        "center",
-      );
+      if (s.phase === "ready")
+        label(ctx, "RSV-01  /  YOUR SHIP", shipX, shipY + 72, "#c4cec9", 9, "center");
       // Emit particles from real authoritative game events.
       for (const event of s.events) {
         if (event.id <= eventId) continue;
@@ -522,7 +623,96 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
           impactAt = elapsed;
           impactBlocked = event.type === "blocked";
         }
-        playSound(event.type);
+        playSound(event.type, event.command);
+        const who = event.name || "";
+        const line = !who
+          ? ""
+          : event.type === "command"
+            ? event.command === "shield"
+              ? "SHIELDS +18"
+              : event.command === "boost"
+                ? "BOOST ENGAGED"
+                : "HULL +8"
+            : event.type === "join"
+              ? "BOARDED"
+              : event.type === "rejected"
+                ? event.text.toUpperCase()
+                : event.text;
+        const same = ticker.at(-1);
+        if (same && same.name === who && same.text.replace(/ ×\d+$/, "") === line) {
+          const n = Number(/ ×(\d+)$/.exec(same.text)?.[1] ?? 1) + 1;
+          same.text = `${line} ×${n}`;
+          same.born = elapsed;
+        } else if (who)
+          ticker.push({
+            name: who,
+            text:
+              event.type === "command"
+                ? event.command === "shield"
+                  ? "SHIELDS +18"
+                  : event.command === "boost"
+                    ? "BOOST ENGAGED"
+                    : "HULL +8"
+                : event.type === "join"
+                  ? "BOARDED"
+                  : event.type === "rejected"
+                    ? event.text.toUpperCase()
+                    : event.text,
+            color: event.color || "#8b9aa4",
+            born: elapsed,
+            dim: event.type === "rejected",
+          });
+        if (ticker.length > 5) ticker = ticker.slice(-5);
+        if (event.type === "command" && event.command === "boost") {
+          boostAt = elapsed;
+          flashAt = elapsed;
+          flashColor = "#f5b65d";
+          flashPower = 0.22;
+          shakeAt = elapsed;
+          shakePower = 2;
+          callout({ text: "BOOST", sub: who, color: "#f5b65d", born: elapsed, x: shipX, y: shipY - 78 });
+        } else if (event.type === "command" && event.command === "shield") {
+          shieldAt = elapsed;
+          pulse({ x: shipX, y: shipY, color: "#70ead8", born: elapsed, life: 0.6, from: 40, to: 110, width: 3, hex: true, attached: true });
+          callout({ text: "SHIELD +18", sub: who, color: "#70ead8", born: elapsed, x: shipX, y: shipY - 78 });
+        } else if (event.type === "command" && event.command === "repair") {
+          pulse({ x: shipX, y: shipY, color: "#c2a2ff", born: elapsed, life: 0.5, from: 30, to: 80, width: 2, attached: true });
+          callout({ text: "HULL +8", sub: who, color: "#c2a2ff", born: elapsed, x: shipX, y: shipY - 78 });
+        } else if (event.type === "join") {
+          callout({ text: "CREW ABOARD", sub: who, color: event.color || "#70ead8", born: elapsed, x: shipX, y: shipY - 90 });
+        } else if (event.type === "hit") {
+          shakeAt = elapsed;
+          shakePower = 9;
+          flashAt = elapsed;
+          flashColor = "#fb7c70";
+          flashPower = 0.35;
+          shout({ text: "HULL HIT", sub: "SEND !repair", color: "#fb7c70", born: elapsed, x: shipX, y: shipY - 92 , attached: true });
+        } else if (event.type === "blocked") {
+          shakeAt = elapsed;
+          shakePower = 3;
+          shieldAt = elapsed;
+          // Ripple where the asteroid met the shield bubble.
+          const a = Math.atan2((event.y ?? shipY) - shipY, (event.x ?? shipX) - shipX);
+          rings.push({ x: shipX + Math.cos(a) * 62, y: shipY + Math.sin(a) * 50, color: "#70ead8", born: elapsed, life: 0.5, from: 6, to: 46, width: 3 });
+          shout({ text: "BLOCKED", sub: "shields held", color: "#70ead8", born: elapsed, x: shipX, y: shipY - 92 , attached: true });
+        } else if (event.type === "rescue") {
+          shakeAt = elapsed;
+          shakePower = 3;
+          flashAt = elapsed;
+          flashColor = "#f5b65d";
+          flashPower = 0.18;
+          rings.push({ x: event.x ?? shipX, y: event.y ?? shipY, color: "#f5b65d", born: elapsed, life: 0.9, from: 20, to: 190, width: 4 });
+          const survivors = /(\d+) survivors/.exec(event.text)?.[1];
+          floats.push({ text: `+${survivors ?? ""} SURVIVORS`, sub: event.text.split(" ")[0], color: "#f5b65d", born: elapsed, x: W / 2, y: 250, big: true });
+        } else if (event.type === "sync") {
+          shakeAt = elapsed;
+          shakePower = 5;
+          flashAt = elapsed;
+          flashColor = "#70ead8";
+          flashPower = 0.3;
+          pulse({ x: shipX, y: shipY, color: "#70ead8", born: elapsed, life: 1.1, from: 40, to: 260, width: 5, attached: true });
+        }
+        if (floats.length > 3) floats = floats.slice(-3);
         if (
           ["rescue", "hit", "blocked", "command", "sync"].includes(event.type)
         ) {
@@ -563,15 +753,57 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
         ctx.globalAlpha = 1 - impactAge / 0.9;
         ctx.lineWidth = 3;
         circle(ctx, shipX, shipY, 50 + impactAge * 75, undefined, color);
-        label(
-          ctx,
-          impactBlocked ? "IMPACT BLOCKED" : "HULL HIT · SEND !REPAIR",
-          shipX,
-          shipY - 100,
-          color,
-          13,
-          "center",
-        );
+        ctx.globalAlpha = 1;
+      }
+      // Shockwaves: shield activation (hexagonal), rescue, ALL HANDS and shield ripples.
+      rings = rings.filter((r) => elapsed - r.born < r.life);
+      for (const r of rings) {
+        const p = (elapsed - r.born) / r.life;
+        const radius = r.from + (r.to - r.from) * (1 - (1 - p) ** 3);
+        const rx = r.attached ? shipX : r.x,
+          ry = r.attached ? shipY : r.y;
+        ctx.globalAlpha = (1 - p) * 0.9;
+        ctx.strokeStyle = r.color;
+        ctx.lineWidth = r.width * (1 - p * 0.6);
+        ctx.beginPath();
+        if (r.hex)
+          for (let i = 0; i <= 6; i++) {
+            const a = (i / 6) * Math.PI * 2 + elapsed * 0.8;
+            const x = rx + Math.cos(a) * radius * 1.3,
+              y = ry + Math.sin(a) * radius;
+            if (i) ctx.lineTo(x, y);
+            else ctx.moveTo(x, y);
+          }
+        else ctx.arc(rx, ry, radius, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      // Boost burst: a rush of speed lines for the first moments of every !boost.
+      const boostAge = elapsed - boostAt;
+      if (boostAge < 0.9) {
+        const k = 1 - boostAge / 0.9;
+        ctx.strokeStyle = `rgba(255,214,150,${0.55 * k})`;
+        for (let i = 0; i < 26; i++) {
+          const y = (i * 97 + 31) % H;
+          const x = (W - ((boostAge * 2600 + i * 211) % (W + 400))) | 0;
+          ctx.lineWidth = 1 + (i % 3);
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(x + 120 + (i % 5) * 40, y);
+          ctx.stroke();
+        }
+        glow(ctx, shipX - 60, shipY, 140 * (0.6 + k), `rgba(245,182,93,${0.35 * k})`);
+      }
+      ctx.restore();
+      // Full-frame flash for hits, boosts, rescues and ALL HANDS.
+      const flashAge = elapsed - flashAt;
+      if (flashAge < 0.5 && !reduceMotion) {
+        const edge = ctx.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, W * 0.7);
+        edge.addColorStop(0, "transparent");
+        edge.addColorStop(1, flashColor);
+        ctx.globalAlpha = flashPower * (1 - flashAge / 0.5);
+        ctx.fillStyle = edge;
+        ctx.fillRect(0, 0, W, H);
         ctx.globalAlpha = 1;
       }
       // Flight HUD kept inside the image for OBS parity.
@@ -591,10 +823,10 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
       if (s.phase !== "ready")
         label(
           ctx,
-          `${boostRatio > 0.1 ? "BOOST ACTIVE" : "CRUISE"}  //  ${(velocity / 10).toFixed(1)} KM/S`,
+          `${boostRatio > 0.1 && burn > 0.3 ? "BOOST + AFTERBURNER" : boostRatio > 0.1 ? "BOOST ACTIVE" : burn > 0.3 ? "AFTERBURNER" : "CRUISE"}  //  ${(velocity / 10).toFixed(1)} KM/S`,
           W / 2,
           35,
-          boostRatio > 0.1 ? "#f5b65d" : "#8b9aa4",
+          boostRatio > 0.1 ? "#f5b65d" : burn > 0.3 ? "#9fe2ff" : "#8b9aa4",
           12,
           "center",
         );
@@ -696,23 +928,107 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
       );
       label(ctx, "DISTRESS SIGNALS", routeX, H - 56, "#8b9aa4", 9);
       label(ctx, "JUMP GATE", routeX + routeW, H - 56, "#8b9aa4", 9, "right");
-      if (s.countdown > 0 && s.phase === "running") {
-        ctx.fillStyle = "#050a1280";
-        ctx.fillRect(0, 0, W, H);
+      // Adaptive difficulty is shown openly so a small stream knows why debris hurts less.
+      if (s.phase !== "won" && s.phase !== "lost")
         label(
           ctx,
-          "CREW, TAKE YOUR STATIONS",
+          `DEBRIS ${Math.round((s.debris ?? 1) * 100)}%  ·  ${s.crew.length ? `${s.crew.length} CREW` : "SOLO PILOT"}`,
+          30,
+          58,
+          (s.debris ?? 1) >= 1 ? "#fb7c70" : "#8b9aa4",
+          9,
+        );
+      // Live crew ticker (top right): who did what, including politely rejected commands.
+      ticker = ticker.filter((t) => elapsed - t.born < 7);
+      ticker.forEach((t, i) => {
+        const y = 66 + i * 24;
+        const a = Math.min(1, (elapsed - t.born) * 6) * Math.min(1, (7 - (elapsed - t.born)) * 1.5);
+        ctx.globalAlpha = a * (t.dim ? 0.75 : 1);
+        ctx.font = '14px "JetBrains Mono", monospace';
+        const action = `  ${t.text}`;
+        const width = ctx.measureText(t.name + action).width;
+        ctx.fillStyle = "#070d15cc";
+        ctx.fillRect(W - 38 - width, y - 15, width + 16, 21);
+        ctx.fillStyle = t.dim ? "#4b5b66" : t.color;
+        ctx.fillRect(W - 38 - width, y - 15, 2, 21);
+        ctx.textAlign = "left";
+        ctx.fillStyle = t.dim ? "#9aa8b0" : t.color;
+        ctx.fillText(t.name, W - 30 - width, y);
+        ctx.fillStyle = t.dim ? "#7d8b94" : "#e8e6dc";
+        ctx.fillText(action, W - 30 - width + ctx.measureText(t.name).width, y);
+      });
+      ctx.globalAlpha = 1;
+      // Floating callouts: rise and fade. Names stay readable on the broadcast.
+      floats = floats.filter((f) => elapsed - f.born < 1.6);
+      floats.forEach((f, i) => {
+        const p = (elapsed - f.born) / 1.6;
+        const stack = floats.filter((o, j) => j > i && !o.big).length;
+        // Attached callouts follow the ship; flip below it near the top edge.
+        const above = shipY > 170;
+        const fx = f.attached ? clampN(shipX, 140, W - 330) : f.x;
+        const y = f.attached
+          ? above
+            ? shipY - 92 - p * 30 - stack * 46
+            : shipY + 112 + p * 20 + stack * 46
+          : f.y - p * 34;
+        ctx.globalAlpha = Math.min(1, (1 - p) * 2.2);
+        const pop = 1 + Math.max(0, 0.25 - p) * 1.4;
+        ctx.textAlign = "center";
+        ctx.font = `${Math.round((f.big ? 34 : 19) * pop)}px "Space Grotesk", sans-serif`;
+        ctx.fillStyle = "#070d15";
+        ctx.fillText(f.text, fx + 1.5, y + 1.5);
+        ctx.fillStyle = f.color;
+        ctx.fillText(f.text, fx, y);
+        if (f.sub) label(ctx, f.sub, fx, y + (f.big ? 24 : 18), "#e8e6dc", 10, "center");
+      });
+      ctx.globalAlpha = 1;
+      if (s.phase === "ready") {
+        label(
+          ctx,
+          s.crew.length
+            ? `${s.crew.length} CREW ABOARD  ·  TYPE !join TO BOARD`
+            : "TYPE !join IN CHAT TO BOARD THE SHIP",
+          shipX,
+          shipY + 140,
+          "#70ead8",
+          11,
+          "center",
+        );
+      }
+      if (s.countdown > 0 && s.phase === "running") {
+        const count = Math.ceil(s.countdown);
+        if (count !== lastCount) {
+          lastCount = count;
+          playSound("tick");
+        }
+        const frac = s.countdown - Math.floor(s.countdown);
+        ctx.fillStyle = "#050a1299";
+        ctx.fillRect(0, 0, W, H);
+        ctx.strokeStyle = "#f5b65d";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(W / 2, H / 2 - 8, 92, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (frac || 1));
+        ctx.stroke();
+        circle(ctx, W / 2, H / 2 - 8, 104, undefined, "#f5b65d30");
+        label(ctx, "CREW, TAKE YOUR STATIONS", W / 2, H / 2 - 130, "#f5b65d", 13, "center");
+        label(
+          ctx,
+          `${s.crew.length} CREW ABOARD  ·  !shield  !boost  !repair  WORK NOW`,
           W / 2,
-          H / 2 - 55,
-          "#f5b65d",
-          12,
+          H / 2 + 132,
+          "#cfd8d4",
+          11,
           "center",
         );
         ctx.textAlign = "center";
-        ctx.font = '80px "Space Grotesk", sans-serif';
+        ctx.font = `${Math.round(84 + (1 - frac) * 26)}px "Space Grotesk", sans-serif`;
         ctx.fillStyle = "#f2f0e7";
-        ctx.fillText(String(Math.ceil(s.countdown)), W / 2, H / 2 + 30);
-      }
+        ctx.fillText(String(count), W / 2, H / 2 + 22);
+      } else if (lastCount === 1 && running) {
+        lastCount = 0;
+        playSound("go");
+        floats.push({ text: "LAUNCH", sub: "BRING THEM HOME", color: "#f5b65d", born: elapsed, x: W / 2, y: H / 2, big: true });
+      } else if (!running) lastCount = s.phase === "running" ? lastCount : 0;
       animation = requestAnimationFrame(render);
     };
     animation = requestAnimationFrame(render);
@@ -722,13 +1038,16 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
     if (spectator || !onInput) return;
     const keys = new Set<string>();
     let focused = false;
-    const input = () =>
-      inputCallback.current?.({
+    const input = () => {
+      const held = {
         up: keys.has("w") || keys.has("arrowup"),
         down: keys.has("s") || keys.has("arrowdown"),
         left: keys.has("a") || keys.has("arrowleft"),
         right: keys.has("d") || keys.has("arrowright"),
-      });
+      };
+      localInput.current = held;
+      inputCallback.current?.(held);
+    };
     const reset = () => {
       keys.clear();
       input();

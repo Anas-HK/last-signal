@@ -12,6 +12,10 @@ export type ChatCommand = Command | "join";
 export const BALANCE = {
   cruise: 60,
   boosted: 110,
+  /** Extra speed at full afterburner (pilot holding forward at the front of the zone). */
+  afterburner: 16,
+  /** The ship eases to a stop here instead of hitting the screen edge. */
+  forwardLimit: 780,
   /** Debris damage scales with crew size, so a solo pilot or a small stream can still finish. */
   debrisFloor: 0.34,
   debrisPerCrew: 0.14,
@@ -71,6 +75,8 @@ export type Pod = {
 };
 export type Ship = {
   speed: number;
+  /** 0..1: the pilot holding forward at the front of the flight zone fires the afterburner. */
+  afterburner: number;
   x: number;
   y: number;
   vx: number;

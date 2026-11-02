@@ -1,0 +1,307 @@
+/* Final polish layer: lobby, audio prompt, live feedback and results.
+   Kept separate from styles.css so the original Superdesign system stays intact. */
+
+/* Buttons: clear hover, press and disabled states. */
+.button,
+.manual-button,
+.tool-button,
+.text-button,
+.mode-selector button {
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s,
+    transform 0.08s,
+    box-shadow 0.2s;
+}
+.button:active:not(:disabled),
+.manual-button:active:not(:disabled),
+.tool-button:active:not(:disabled) {
+  transform: translateY(1px) scale(0.98);
+}
+.button.primary:hover:not(:disabled) {
+  box-shadow: 0 0 0 4px #f5b65d22, 0 8px 30px #f5b65d33;
+}
+.button:disabled,
+.manual-button:disabled {
+  filter: grayscale(0.6);
+}
+.tool-button.is-on {
+  color: var(--amber);
+}
+.tool-button:disabled {
+  opacity: 0.35;
+}
+
+/* Launch row: primary action plus an explicit sound choice before the first flight. */
+.launch-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 22px;
+  pointer-events: auto;
+}
+.stage-intro .launch-row .launch-button {
+  margin-top: 0;
+  animation: launch-glow 2.4s ease-in-out infinite;
+}
+@keyframes launch-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 #f5b65d00;
+  }
+  50% {
+    box-shadow: 0 0 0 6px #f5b65d22, 0 0 36px #f5b65d44;
+  }
+}
+.sound-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 10px 14px;
+  border: 1px solid #3a4b57;
+  background: #0b141dcc;
+  color: #c7d3d6;
+  font-size: 12px;
+  border-radius: 5px;
+}
+.sound-pill:hover {
+  border-color: var(--amber);
+  color: #fff;
+}
+.sound-pill.is-on {
+  border-color: #70ead866;
+  color: var(--cyan);
+}
+
+/* Lobby: who has boarded before launch. Visible in the console and the OBS view. */
+.lobby {
+  margin-top: 20px;
+  max-width: 470px;
+  padding: 12px 14px;
+  border: 1px solid #70ead833;
+  border-left: 3px solid var(--cyan);
+  background: #070d15d9;
+  border-radius: 4px;
+}
+.lobby-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: var(--cyan);
+}
+.lobby-title strong {
+  margin-left: auto;
+  font-size: 18px;
+  font-weight: 500;
+  color: #eef3ef;
+}
+.lobby-names {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-top: 10px;
+  font-family: var(--mono);
+  font-size: 13px;
+}
+.lobby-names span {
+  animation: feed-in 0.3s ease-out;
+}
+.lobby-more {
+  color: #8b9aa4;
+}
+.lobby-empty {
+  display: block;
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #a6b4ba;
+}
+.lobby-empty code {
+  color: var(--cyan);
+}
+
+/* Station meters pulse when a viewer raises them, and warn when low. */
+.station-value[data-rise="true"] {
+  animation: value-rise 0.5s ease-out;
+}
+@keyframes value-rise {
+  0% {
+    transform: scale(1.45);
+    text-shadow: 0 0 18px var(--station);
+  }
+  100% {
+    transform: scale(1);
+    text-shadow: none;
+  }
+}
+.station-value {
+  display: inline-block;
+  transform-origin: right center;
+}
+.command-station.is-low .station-meter span {
+  animation: meter-low 0.9s ease-in-out infinite;
+}
+@keyframes meter-low {
+  50% {
+    opacity: 0.35;
+  }
+}
+.station-meter span {
+  transition: width 0.25s ease-out;
+  box-shadow: 0 0 10px var(--station);
+}
+
+/* Feed: joins stand out, rejections are quiet but readable. */
+.feed-event.join p {
+  color: #b9e9df;
+}
+.feed-event.rejected {
+  opacity: 0.8;
+}
+.feed-event.rejected p {
+  color: #93a1a9;
+  font-style: italic;
+}
+.feed-event.sync p {
+  color: var(--cyan);
+}
+
+/* Notifications: larger, with an accent edge. */
+.toast {
+  font-size: 14px;
+  border-left: 3px solid var(--amber);
+  background: #1e2a33f2;
+}
+
+/* Results: victory gold, defeat coral, pods and MVP. */
+.results-layer.won {
+  background:
+    radial-gradient(ellipse at 50% 30%, #f5b65d22, transparent 60%),
+    #080f17ed;
+}
+.results-layer.lost {
+  background:
+    radial-gradient(ellipse at 50% 30%, #fb7c7018, transparent 60%),
+    #080f17f0;
+}
+.results-layer.won .result-medallion {
+  animation: medal 1.2s ease-out both;
+  box-shadow: 0 0 60px #f5b65d55;
+}
+.results-layer.lost .result-medallion {
+  color: var(--danger);
+  border-color: #fb7c7066;
+}
+.results-layer.lost .eyebrow {
+  color: var(--danger);
+}
+.results-layer h2 {
+  animation: rise-in 0.6s ease-out both;
+}
+@keyframes medal {
+  0% {
+    transform: scale(0.3) rotate(-30deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.2) rotate(6deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0);
+  }
+}
+@keyframes rise-in {
+  from {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+.result-pods {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.result-pod {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 1px;
+  border: 1px solid #34454f;
+  color: #8b9aa4;
+}
+.result-pod.rescued {
+  color: var(--amber);
+  border-color: #f5b65d66;
+  background: #f5b65d12;
+}
+.result-pod.missed,
+.result-pod.waiting {
+  color: #c99087;
+  border-color: #fb7c7044;
+}
+.result-mvp {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 8px 14px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 1px;
+  animation: rise-in 0.6s 0.4s ease-out both;
+}
+.result-mvp strong {
+  font-size: 14px;
+  color: #f4f1e8;
+}
+.result-mvp small {
+  color: #9db0b6;
+}
+
+/* OBS footer: command chips large enough to read on stream. */
+.broadcast-instructions small {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: #9fb2b8;
+}
+
+@media (max-width: 640px) {
+  .launch-row {
+    gap: 8px;
+  }
+  .sound-pill {
+    min-height: 36px;
+    padding: 8px 10px;
+    font-size: 11px;
+  }
+  .lobby {
+    padding: 9px 10px;
+    margin-top: 12px;
+  }
+  .lobby-empty {
+    font-size: 11px;
+  }
+  .result-pod {
+    font-size: 10px;
+    padding: 4px 7px;
+  }
+}

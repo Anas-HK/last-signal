@@ -1,9 +1,10 @@
 import { test, expect } from "@playwright/test";
 import WebSocket from "ws";
 import type { Snapshot } from "../../shared/types.js";
+const port = process.env.E2E_PORT || "3002";
 async function watch() {
-  const ws = new WebSocket("ws://localhost:3002/ws", {
-    origin: "http://localhost:3002",
+  const ws = new WebSocket(`ws://localhost:${port}/ws`, {
+    origin: `http://localhost:${port}`,
   });
   let latest: Snapshot;
   ws.on("message", (raw) => {

@@ -15,6 +15,7 @@ import {
   Flag,
   Heart,
   Maximize2,
+  Music,
   Pause,
   Play,
   Radio,
@@ -25,6 +26,8 @@ import {
   Shield,
   Signal,
   Sparkles,
+  Trophy,
+  UserPlus,
   Users,
   Volume2,
   VolumeX,
@@ -40,7 +43,55 @@ import {
 } from "../shared/types";
 import { Space } from "./Space";
 import { useSession } from "./useSession";
-import { setSound } from "./audio";
+import {
+  audioBlocked,
+  audioPrefs,
+  onAudioPrefs,
+  setMusic,
+  setMusicMode,
+  setSound,
+  unlockAudio,
+} from "./audio";
+
+/** Briefly true after a value rises, to pulse the meter that changed. */
+function useRise(value: number) {
+  const previous = useRef(value);
+  const [rise, setRise] = useState(0);
+  useEffect(() => {
+    if (value > previous.current + 0.5) setRise((n) => n + 1);
+    previous.current = value;
+  }, [value]);
+  return rise;
+}
+function Station({ command, value }: { command: Command; value: number }) {
+  const info = commandInfo[command];
+  const Icon = info.icon;
+  const rise = useRise(Math.round(value));
+  return (
+    <div
+      className={`command-station ${command} ${value < 25 ? "is-low" : ""}`}
+      style={{ "--station": COLORS[command] } as React.CSSProperties}
+    >
+      <div className="station-top">
+        <span className="station-icon">
+          <Icon size={18} />
+        </span>
+        <span className="station-name">{info.name}</span>
+        <span className="station-value" key={rise} data-rise={rise > 0}>
+          {Math.ceil(value)}
+          <small>%</small>
+        </span>
+      </div>
+      <div className="station-meter">
+        <span style={{ width: `${value}%` }} />
+      </div>
+      <div className="station-bottom">
+        <code>!{command}</code>
+        <span>{info.action}</span>
+      </div>
+    </div>
+  );
+}
 
 const commandInfo = {
   shield: {
@@ -96,13 +147,31 @@ export function App() {
   const [modal, setModal] = useState<"connect" | "help" | "broadcast" | null>(
     null,
   );
-  const [sound, updateSound] = useState(false);
+  const [prefs, updatePrefs] = useState(audioPrefs);
+  const sound = prefs.sound;
+  const [blocked, setBlocked] = useState(audioBlocked);
+  useEffect(() => onAudioPrefs(updatePrefs), []);
+  // Browsers only start audio after a gesture: resume on the first click or key press.
+  useEffect(() => {
+    if (spectator) return;
+    const unlock = () => {
+      unlockAudio();
+      setTimeout(() => setBlocked(audioBlocked()), 150);
+    };
+    window.addEventListener("pointerdown", unlock);
+    window.addEventListener("keydown", unlock);
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+  }, [spectator]);
   const [channel, setChannel] = useState(
     () => localStorage.getItem("lastsignal-channel") || "",
   );
   const [name, setName] = useState("space_cadet");
   const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [launching, setLaunching] = useState(false);
   const stage = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!modal) return;
@@ -159,9 +228,28 @@ export function App() {
       setTimeout(() => stage.current?.querySelector("canvas")?.focus(), 50);
   };
   const toggleSound = () => {
-    updateSound(!sound);
     setSound(!sound);
+    setTimeout(() => setBlocked(audioBlocked()), 150);
   };
+  const phase = state?.game.phase;
+  const storm = state?.game.storm;
+  const counting = (state?.game.countdown ?? 0) > 0;
+  // Music follows the mission: calm in the lobby, driving in flight, tense in the storm,
+  // a fanfare or a sting at the end. The OBS view stays silent to avoid doubled audio.
+  useEffect(() => {
+    if (spectator || !phase) return;
+    setMusicMode(
+      phase === "won"
+        ? "won"
+        : phase === "lost"
+          ? "lost"
+          : phase === "running" && !counting
+            ? storm
+              ? "storm"
+              : "flight"
+            : "lobby",
+    );
+  }, [spectator, phase, storm, counting]);
   const copy = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -204,41 +292,30 @@ export function App() {
   const overlayUrl = `${location.origin}/overlay`;
   const connectedTwitch = state.twitch.status === "connected";
   const commands = (["shield", "boost", "repair"] as Command[]).map(
-    (command) => {
-      const info = commandInfo[command];
-      const Icon = info.icon;
-      const value =
-        command === "shield"
-          ? game.ship.shield
-          : command === "boost"
-            ? game.ship.boost
-            : game.ship.hull;
-      return (
-        <div
-          key={command}
-          className={`command-station ${command}`}
-          style={{ "--station": COLORS[command] } as React.CSSProperties}
-        >
-          <div className="station-top">
-            <span className="station-icon">
-              <Icon size={18} />
-            </span>
-            <span className="station-name">{info.name}</span>
-            <span className="station-value">
-              {Math.ceil(value)}
-              <small>%</small>
-            </span>
-          </div>
-          <div className="station-meter">
-            <span style={{ width: `${value}%` }} />
-          </div>
-          <div className="station-bottom">
-            <code>!{command}</code>
-            <span>{info.action}</span>
-          </div>
-        </div>
-      );
-    },
+    (command) => (
+      <Station
+        key={command}
+        command={command}
+        value={
+          command === "shield"
+            ? game.ship.shield
+            : command === "boost"
+              ? game.ship.boost
+              : game.ship.hull
+        }
+      />
+    ),
+  );
+  const lobby = game.crew.slice(-10);
+  const soundPrompt = !spectator && (
+    <button
+      className={`sound-pill ${sound ? "is-on" : ""}`}
+      onClick={toggleSound}
+      aria-pressed={sound}
+    >
+      {sound ? <Volume2 size={15} /> : <VolumeX size={15} />}
+      {sound ? (blocked ? "Sound on · click to start" : "Sound & music on") : "Turn on sound & music"}
+    </button>
   );
   const flight = (
     <div className={`flight-stage ${game.phase}`} ref={stage}>
@@ -265,19 +342,47 @@ export function App() {
             <br />
             Your chat is the crew keeping it alive.
           </p>
+          <div className="lobby" aria-live="polite">
+            <span className="lobby-title">
+              <UserPlus size={14} /> CREW BOARDING
+              <strong>{String(game.crew.length).padStart(2, "0")}</strong>
+            </span>
+            {lobby.length ? (
+              <div className="lobby-names">
+                {lobby.map((c) => (
+                  <span key={c.id} style={{ color: c.color }}>
+                    {c.name}
+                  </span>
+                ))}
+                {game.crew.length > lobby.length && (
+                  <span className="lobby-more">+{game.crew.length - lobby.length}</span>
+                )}
+              </div>
+            ) : (
+              <span className="lobby-empty">
+                Chat types <code>!join</code> to board. Solo works too: debris
+                eases off for small crews.
+              </span>
+            )}
+          </div>
           {!spectator && (
-            <button
-              className="button primary launch-button"
-              disabled={!connected}
-              onClick={() => action("start")}
-            >
-              <Play size={16} fill="currentColor" /> Launch rescue{" "}
-              <ArrowUpRight size={18} />
-            </button>
+            <div className="launch-row">
+              <button
+                className="button primary launch-button"
+                disabled={!connected || launching}
+                onClick={() => {
+                  setLaunching(true);
+                  setTimeout(() => setLaunching(false), 1500);
+                  unlockAudio();
+                  action("start");
+                }}
+              >
+                <Play size={16} fill="currentColor" /> Launch rescue{" "}
+                <ArrowUpRight size={18} />
+              </button>
+              {soundPrompt}
+            </div>
           )}
-          <span className="stage-coordinate">
-            07° 24′ N &nbsp; / &nbsp; 119° 08′ E
-          </span>
         </div>
       )}
       {game.phase === "paused" && (
@@ -335,10 +440,12 @@ export function App() {
         {flight}
         <footer>
           <div className="broadcast-instructions">
-            <span>YOU ARE THE CREW.</span>
+            <span>YOU ARE THE CREW. TYPE</span>
+            <code>!join</code>
             <code>!shield</code>
             <code>!boost</code>
             <code>!repair</code>
+            <small>Repeat with a word: !boost go</small>
           </div>
           <span>
             {game.crew.length} crew · {game.people} rescued · Built with Codex
@@ -375,6 +482,12 @@ export function App() {
         </nav>
       </header>
       <main className="main-content">
+        {config && !config.operatorKey && (
+          <div className="inline-warning">
+            <Radio size={16} /> View only. Open this console on the streaming
+            computer to fly and control the mission.
+          </div>
+        )}
         <section className="mission-heading">
           <div>
             <div className="eyebrow">
@@ -420,12 +533,23 @@ export function App() {
                   <Timer game={game} />
                 </span>
                 <button
-                  className="tool-button"
-                  title={sound ? "Mute audio" : "Enable audio"}
-                  aria-label={sound ? "Mute audio" : "Enable audio"}
+                  className={`tool-button ${sound ? "is-on" : ""}`}
+                  title={sound ? "Mute all sound" : "Turn on sound"}
+                  aria-label={sound ? "Mute all sound" : "Turn on sound"}
+                  aria-pressed={sound}
                   onClick={toggleSound}
                 >
                   {sound ? <Volume2 size={16} /> : <VolumeX size={16} />}
+                </button>
+                <button
+                  className={`tool-button ${sound && prefs.music ? "is-on" : ""}`}
+                  title={prefs.music ? "Turn music off" : "Turn music on"}
+                  aria-label={prefs.music ? "Turn music off" : "Turn music on"}
+                  aria-pressed={prefs.music}
+                  disabled={!sound}
+                  onClick={() => setMusic(!prefs.music)}
+                >
+                  <Music size={15} />
                 </button>
                 <button
                   className="tool-button"
@@ -575,6 +699,10 @@ export function App() {
                           <Flag size={13} />
                         ) : event.type === "hit" ? (
                           <Zap size={13} />
+                        ) : event.type === "join" ? (
+                          <UserPlus size={13} />
+                        ) : event.type === "rejected" ? (
+                          <X size={13} />
                         ) : (
                           <Radio size={13} />
                         )}
@@ -697,13 +825,10 @@ export function App() {
                 aria-label="Simulated viewer name"
                 placeholder="your_name"
               />
-              {(["shield", "boost", "repair"] as Command[]).map((c) => (
+              {(["join", "shield", "boost", "repair"] as const).map((c) => (
                 <button
                   className={`manual-button ${c}`}
-                  disabled={
-                    !["ready", "running"].includes(game.phase) ||
-                    (game.phase === "running" && game.countdown > 0)
-                  }
+                  disabled={!["ready", "running"].includes(game.phase)}
                   key={c}
                   onClick={() => send({ type: "command", command: c, name })}
                 >
@@ -896,7 +1021,7 @@ export function App() {
                     <>
                       <a
                         className="button ghost full-button"
-                        href={config.appUrl + "/auth/twitch"}
+                        href={`${config.appUrl}/auth/twitch?return=${encodeURIComponent(location.origin)}`}
                       >
                         <TwitchMark /> Authorize with Twitch{" "}
                         <ArrowUpRight size={16} />
@@ -977,10 +1102,15 @@ export function App() {
                   <div>
                     <h3>The community keeps you alive.</h3>
                     <p>
+                      <code>!join</code> boards the crew before launch.{" "}
                       <code>!shield</code> adds 18 shield. <code>!boost</code>{" "}
-                      adds 22 engine charge, increasing your speed.{" "}
+                      adds 22 engine charge, nearly doubling your speed.{" "}
                       <code>!repair</code> restores 8 hull. Each viewer has a
-                      2-second cooldown; full systems reject extra actions.
+                      2-second cooldown; full systems reject extra actions and
+                      the feed says why. Twitch can block sending the exact
+                      same message twice in a row, so add any word to repeat:{" "}
+                      <code>!boost go</code>. Debris hits softer for small
+                      crews, full strength from five crew.
                     </p>
                   </div>
                 </div>
@@ -1077,6 +1207,21 @@ function TwitchMark() {
     </svg>
   );
 }
+function CountUp({ to }: { to: number }) {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    let frame = 0;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - start) / 900);
+      setValue(Math.round(to * (1 - (1 - p) ** 3)));
+      if (p < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [to]);
+  return <>{value}</>;
+}
 function Results({
   game,
   spectator,
@@ -1102,20 +1247,48 @@ function Results({
       </span>
       <h2>{won ? "You brought them home." : "One more signal."}</h2>
       <p>{game.reason}</p>
+      <div className="result-pods" aria-label="Escape pods">
+        {game.pods.map((pod) => (
+          <span key={pod.id} className={`result-pod ${pod.status}`}>
+            {pod.status === "rescued" ? <Check size={13} /> : <X size={13} />}
+            {pod.name}
+          </span>
+        ))}
+      </div>
       <div className="result-stats">
         <span>
-          <strong>{game.people}</strong>SURVIVORS
+          <strong>
+            <CountUp to={game.people} />
+          </strong>
+          SURVIVORS
         </span>
         <span>
-          <strong>{game.crew.length}</strong>CREW MEMBERS
+          <strong>
+            <CountUp to={game.crew.length} />
+          </strong>
+          CREW MEMBERS
         </span>
         <span>
-          <strong>{game.actions}</strong>CREW ACTIONS
+          <strong>
+            <CountUp to={game.actions} />
+          </strong>
+          CREW ACTIONS
         </span>
         <span>
-          <strong>{game.blocked}</strong>IMPACTS BLOCKED
+          <strong>
+            <CountUp to={game.blocked} />
+          </strong>
+          IMPACTS BLOCKED
         </span>
       </div>
+      {crew[0] && crew[0].points > 0 && (
+        <div className="result-mvp" style={{ color: crew[0].color }}>
+          <Trophy size={16} /> MVP <strong>{crew[0].name}</strong>
+          <small>
+            {crew[0].points} pts · {crew[0].actions} actions
+          </small>
+        </div>
+      )}
       {crew.length > 0 && (
         <div className="mission-credits">
           <span className="eyebrow">THIS RESCUE WAS POWERED BY</span>
