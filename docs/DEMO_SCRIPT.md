@@ -1,11 +1,19 @@
-# Demo script — current export 2:48, hard limit 2:59
+# Demo videos
 
-## Current gameplay export (2026-11-02)
+Two 1080p H.264/AAC exports are available in the GitHub release:
 
-The current `artifacts/demo/last-signal-demo.mp4` is a fresh 168.2-second export, replacing the earlier pre-polish video. It shows the lobby, named meteor/crate screenshot, keyboard-driven crate pickup and E activation, a complete uncut rescue, a real Twitch connection screenshot, and the results. Rehearsal source labels remain visible. Narration is synthesized offline; game sound/music is not captured in this export.
+- `last-signal-voiceover-game-audio.mp4`: Grady neural narration, embedded captions, game music and effects. The narration uses Seed Audio 1.0 through Higgsfield and is AI-generated.
+- `last-signal-captions-game-audio.mp4`: embedded captions, game music and effects, with no narration.
 
-The rescue segment starts at 00:24.16, the real connection screenshot at 02:23.20, and the closing result at 02:34.20. The connection capture received zero messages; do not describe it as viewer-command evidence. The full timeline is saved in `artifacts/demo/timeline.json`, and narration text in `narration.json`.
+Both run for approximately 1:48. Captions occupy a separate lower band, keeping the flight HUD visible. Music ducks under narration in the voiceover version. The gameplay is continuous, followed by the result card from the same mission. The recording rescued all 13 survivors and shows nova bomb, bubble shield and overdrive guns being caught and fired, plus laser fire, dashes, named meteors and ALL HANDS.
 
-Rebuild after running all browser journeys with `VERIFY_TWITCH_CHANNEL` enabled: `node scripts/build-submission.mjs`, then `node scripts/caption-demo.mjs`. These require FFmpeg/FFprobe and Windows System.Speech with Microsoft Zira Desktop. The exporter checks narration timing, preserves the entire rescue recording, and rejects a total duration of three minutes or more. `scripts/build-demo.mjs` forwards to the current exporter.
+The footage uses labeled simulated chat and automated keyboard control with the built-in training pilot disabled. It is a capture of the actual game and its Web Audio output, not a rendered or scripted game outcome. No live viewer-message claim is made for this recording.
 
-Upload copy and gallery captions are in `GALLERY.md`. Upload the MP4 as Public on YouTube and check the link while signed out.
+## Reproduce the recording and exports
+
+1. Build the app, then start an isolated server: `node --import tsx server/index.ts --port 3304 --app-url http://localhost:3304`.
+2. Run `node scripts/record-showcase.mjs`. It records real Canvas frames and Web Audio into one synchronized stream and saves mission evidence in `artifacts/showcase/recording.json`.
+3. Run `node scripts/export-showcase.mjs` to generate the version without narration. It creates embedded captions and a sidecar SRT, normalizes game audio and limits peaks.
+4. With licensed/generated Grady WAV segments saved as `artifacts/showcase/voice/0.wav` through `8.wav`, run `node scripts/mix-showcase-voice.mjs` for the voiceover version. The mixer checks speech timing, ducks game audio during speech, and limits the final mix.
+
+The recording harness fails if all three power-ups are not demonstrated. Keep the rehearsal label visible. Inspect both exports, then upload the preferred version to YouTube as Public and check the URL while signed out.

@@ -163,7 +163,7 @@ Simulation and snapshots run at 30 Hz. The browser extrapolates the ship from th
 
 - [Project description](docs/PROJECT_DESCRIPTION.md)
 - Demo video: **YouTube link to be added after upload.**
-- Prepared demo MP4: `artifacts/demo/last-signal-demo.mp4` (fresh gameplay and an uncut rescue, with captions and offline synthesized narration).
+- Demo exports: **voiceover + game audio**, or **embedded captions + game audio without narration**. Both are 1:48 at 1080p and show all three power-ups, laser fire, dashes, named meteors and a complete rescue.
 - Downloadable demo, captions and gallery ZIP: [GitHub release](https://github.com/Anas-HK/last-signal/releases/tag/v1.0.0).
 - [Gallery order, captions and upload copy](docs/GALLERY.md)
 - [Under-three-minute video script and recording instructions](docs/DEMO_SCRIPT.md)
