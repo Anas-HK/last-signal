@@ -1,12 +1,20 @@
 import { randomUUID } from "node:crypto";
 import {
+  BALANCE,
   COLORS,
+  COMMANDS,
+  debrisScale,
+  type ChatCommand,
   type Command,
+  type GameEvent,
   type GameState,
   type Input,
   type Mode,
   WORLD,
 } from "../shared/types.js";
+
+type Result = { accepted: boolean; reason?: string; short?: string };
+const STATION = { shield: "SHIELDS", boost: "ENGINES", repair: "REPAIRS" };
 
 export function random(seed: number) {
   let a = seed | 0;
@@ -30,6 +38,11 @@ export class Game {
   private nextBot = 0;
   private rateWindow = 0;
   private rateCount = 0;
+  /** Complete mission history for the exported log. `state.events` keeps only the recent 70. */
+  history: GameEvent[] = [];
+  private rejectedAt = new Map<string, number>();
+  private rejectWindow = 0;
+  private rejectCount = 0;
   constructor() {
     this.state = this.create("demo", 42);
   }
@@ -41,6 +54,10 @@ export class Game {
     this.nextId = 0;
     this.rateWindow = 0;
     this.rateCount = 0;
+    this.history = [];
+    this.rejectedAt.clear();
+    this.rejectWindow = 0;
+    this.rejectCount = 0;
     const rocks = Array.from({ length: 100 }, (_, i) => ({
       id: i,
       x: 850 + this.rng() * 6800,
@@ -58,7 +75,7 @@ export class Game {
       elapsed: 0,
       distance: 0,
       ship: {
-        speed: 53,
+        speed: BALANCE.cruise,
         x: 245,
         y: 330,
         vx: 0,
@@ -103,6 +120,7 @@ export class Game {
       links: [],
       bursts: 0,
       overdriveUntil: 0,
+      debris: debrisScale(0),
     };
   }
   reset(mode = this.state.mode, seed = 42) {
@@ -129,65 +147,142 @@ export class Game {
     text: string,
     extra: Partial<GameState["events"][number]> = {},
   ) {
-    this.state.events.push({
-      id: ++this.nextId,
-      t: this.state.elapsed,
-      type,
-      text,
-      ...extra,
-    });
+    const event = { id: ++this.nextId, t: this.state.elapsed, type, text, ...extra };
+    this.state.events.push(event);
     if (this.state.events.length > 70) this.state.events.shift();
+    this.history.push(event);
+    if (this.history.length > 5000) this.history.shift();
   }
-  command(
-    id: string,
-    name: string,
-    role: Command,
-    simulated: boolean,
-  ): { accepted: boolean; reason?: string } {
+  /** Entry point for every viewer command (Twitch chat or the rehearsal console). Rejections
+   * are announced in the feed so viewers know their message arrived, throttled per viewer. */
+  chat(id: string, name: string, command: ChatCommand, simulated: boolean): Result {
+    const result =
+      command === "join"
+        ? this.join(id, name, simulated)
+        : this.command(id, name, command, simulated);
+    if (result.accepted || !result.short) return result;
+    const now = this.clock;
+    if (now - (this.rejectedAt.get(id) ?? -10) < 4) return result;
+    if (now - this.rejectWindow >= 1) {
+      this.rejectWindow = now;
+      this.rejectCount = 0;
+    }
+    if (this.rejectCount >= 3) return result;
+    this.rejectCount++;
+    this.rejectedAt.set(id, now);
+    if (this.rejectedAt.size > 2000)
+      this.rejectedAt.delete(this.rejectedAt.keys().next().value!);
+    this.event("rejected", `!${command} · ${result.short}`, {
+      name: this.clean(name),
+      command,
+      color: "#8b9aa4",
+      simulated,
+    });
+    return result;
+  }
+  private clean(name: string) {
+    return name.replace(/[\x00-\x1f]/g, "").slice(0, 25) || "crew";
+  }
+  private gate(simulated: boolean, member: boolean): Result | null {
     const s = this.state;
-    if (
-      !["ready", "running"].includes(s.phase) ||
-      (s.phase === "running" && s.countdown > 0)
-    )
+    if (s.phase === "won" || s.phase === "lost")
       return {
         accepted: false,
-        reason:
-          s.phase === "paused"
-            ? "Resume the mission to activate crew commands."
-            : s.countdown > 0 && s.phase === "running"
-              ? "Wait for the launch countdown."
-              : "Start a new rescue to activate your crew.",
+        reason: "Start a new rescue to activate your crew.",
+        short: "mission over",
+      };
+    if (s.phase === "paused")
+      return {
+        accepted: false,
+        reason: "Resume the mission to activate crew commands.",
+        short: "mission paused",
       };
     if ((s.mode === "live" && simulated) || (s.mode === "demo" && !simulated))
       return {
         accepted: false,
         reason: "Command source does not match this mission.",
       };
+    if (!member && s.crew.length >= 500)
+      return { accepted: false, reason: "Crew is full for this mission.", short: "crew full" };
+    return null;
+  }
+  /** Board the ship. The viewer is assigned the least-staffed station; no charge is spent. */
+  join(id: string, name: string, simulated: boolean): Result {
+    const s = this.state;
     const member = s.crew.find((c) => c.id === id);
+    const blocked = this.gate(simulated, Boolean(member));
+    if (blocked) return blocked;
+    if (member) return { accepted: false, reason: "Already aboard.", short: "already aboard" };
+    if (this.clock - this.rateWindow >= 1) {
+      this.rateWindow = this.clock;
+      this.rateCount = 0;
+    }
+    if (this.rateCount >= 15)
+      return { accepted: false, reason: "Crew uplink is busy. Try again.", short: "uplink busy" };
+    this.rateCount++;
+    const count = (r: Command) => s.crew.filter((c) => c.role === r).length;
+    const role = [...COMMANDS].sort((a, b) => count(a) - count(b))[0];
+    s.crew.push({
+      id,
+      name: this.clean(name),
+      role,
+      color: COLORS[role],
+      actions: 0,
+      points: 0,
+      lastAction: -10,
+      simulated,
+    });
+    this.event("join", `boarded the ship · ${STATION[role]} station`, {
+      name: this.clean(name),
+      command: "join",
+      color: COLORS[role],
+      simulated,
+      x: s.ship.x,
+      y: s.ship.y,
+    });
+    return { accepted: true };
+  }
+  command(
+    id: string,
+    name: string,
+    role: Command,
+    simulated: boolean,
+  ): Result {
+    const s = this.state;
+    // Commands work in the lobby and during the launch countdown: viewers precharge the ship.
+    const member = s.crew.find((c) => c.id === id);
+    const blocked = this.gate(simulated, Boolean(member));
+    if (blocked) return blocked;
     if (this.clock - (this.cooldowns.get(id) ?? -10) < 1.8)
       return {
         accepted: false,
         reason: "Your crew member is recharging (2s).",
+        short: "recharging, try again in 2s",
       };
     if (this.clock - this.rateWindow >= 1) {
       this.rateWindow = this.clock;
       this.rateCount = 0;
     }
     if (this.rateCount >= 15)
-      return { accepted: false, reason: "Crew uplink is busy. Try again." };
+      return {
+        accepted: false,
+        reason: "Crew uplink is busy. Try again.",
+        short: "uplink busy, try again",
+      };
     const before =
       role === "shield"
         ? s.ship.shield
         : role === "boost"
           ? s.ship.boost
           : s.ship.hull;
-    if (before >= 99.5)
+    if (before >= 99.5) {
+      const system = role === "repair" ? "Hull" : role === "shield" ? "Shields" : "Boost";
       return {
         accepted: false,
-        reason: `${role === "repair" ? "Hull" : role === "shield" ? "Shields" : "Boost"} already at capacity.`,
+        reason: `${system} already at capacity.`,
+        short: `${system.toLowerCase()} already full`,
       };
-    if (!member && s.crew.length >= 500)
-      return { accepted: false, reason: "Crew is full for this mission." };
+    }
     this.rateCount++;
     const amount = Math.min(
       100 - before,
@@ -201,7 +296,7 @@ export class Game {
     }
     const crew = member ?? {
       id,
-      name: name.replace(/[\x00-\x1f]/g, "").slice(0, 25) || "crew",
+      name: this.clean(name),
       role,
       color: COLORS[role],
       actions: 0,
@@ -258,6 +353,7 @@ export class Game {
     this.clock += dt;
     const s = this.state;
     s.links = s.links.filter((l) => this.clock - l.t < 6);
+    s.debris = debrisScale(s.crew.length);
     if (s.phase !== "running") return;
     if (s.countdown > 0) {
       s.countdown = Math.max(0, s.countdown - dt);
@@ -266,7 +362,7 @@ export class Game {
     s.elapsed += dt;
     const ship = s.ship;
     s.storm = s.distance > 2400 && s.distance < 4500;
-    const targetSpeed = ship.boost > 1 ? 105 : 53;
+    const targetSpeed = ship.boost > 1 ? BALANCE.boosted : BALANCE.cruise;
     ship.speed += (targetSpeed - ship.speed) * Math.min(1, dt * 4);
     s.distance += ship.speed * dt;
     ship.boost = Math.max(0, ship.boost - dt * 9);
@@ -301,7 +397,7 @@ export class Game {
       ) {
         rock.hit = true;
         ship.invincible = 0.7;
-        const damage = s.storm ? 23 : 17;
+        const damage = (s.storm ? 23 : 17) * s.debris;
         if (ship.shield >= damage) {
           ship.shield -= damage;
           s.blocked++;

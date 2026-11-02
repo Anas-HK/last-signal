@@ -6,6 +6,19 @@ export const WORLD = {
 };
 export const COMMANDS = ["shield", "boost", "repair"] as const;
 export type Command = (typeof COMMANDS)[number];
+/** Everything a viewer can type. `!join` boards the crew without spending a station charge. */
+export type ChatCommand = Command | "join";
+/** Tuning shared by the engine and the renderer. Cruise alone reaches the gate in 115 s. */
+export const BALANCE = {
+  cruise: 60,
+  boosted: 110,
+  /** Debris damage scales with crew size, so a solo pilot or a small stream can still finish. */
+  debrisFloor: 0.34,
+  debrisPerCrew: 0.14,
+};
+export function debrisScale(crew: number) {
+  return Math.min(1, BALANCE.debrisFloor + BALANCE.debrisPerCrew * crew);
+}
 export type Mode = "demo" | "live";
 export type Phase = "ready" | "running" | "paused" | "won" | "lost";
 export type Crew = {
@@ -21,10 +34,19 @@ export type Crew = {
 export type GameEvent = {
   id: number;
   t: number;
-  type: "command" | "rescue" | "hit" | "blocked" | "system" | "missed" | "sync";
+  type:
+    | "command"
+    | "rescue"
+    | "hit"
+    | "blocked"
+    | "system"
+    | "missed"
+    | "sync"
+    | "join"
+    | "rejected";
   text: string;
   name?: string;
-  command?: Command;
+  command?: ChatCommand;
   color?: string;
   x?: number;
   y?: number;
@@ -83,11 +105,13 @@ export type GameState = {
   links: { role: Command; id: string; name: string; t: number }[];
   bursts: number;
   overdriveUntil: number;
+  /** Current debris damage multiplier (0.34 to 1), derived from crew size. */
+  debris: number;
 };
 export type TwitchStatus = {
   lastCommand?: {
     name: string;
-    command: Command;
+    command: ChatCommand;
     at: number;
     accepted: boolean;
     reason?: string;
@@ -120,10 +144,12 @@ export type ClientMessage =
       action: "start" | "pause" | "reset" | "simulation" | "autopilot";
       value?: boolean;
     }
-  | { type: "command"; command: Command; name: string };
-export function parseCommand(text: string): Command | null {
-  const match = /^!(shield|boost|repair)(?:\s|$)/i.exec(text.trim());
-  return match ? (match[1].toLowerCase() as Command) : null;
+  | { type: "command"; command: ChatCommand; name: string };
+/** Exact command, optionally followed by any words: `!boost go` works, `!boosted` does not.
+ * Trailing words let a viewer repeat a command when Twitch blocks an identical message. */
+export function parseCommand(text: string): ChatCommand | null {
+  const match = /^!(shield|boost|repair|join)(?:\s|$)/i.exec(text.trim());
+  return match ? (match[1].toLowerCase() as ChatCommand) : null;
 }
 export const COLORS: Record<Command, string> = {
   shield: "#70ead8",

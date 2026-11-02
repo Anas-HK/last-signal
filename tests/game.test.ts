@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { Game } from "../server/game.js";
-import { parseCommand, WORLD } from "../shared/types.js";
+import { BALANCE, debrisScale, parseCommand, WORLD } from "../shared/types.js";
 function launch(mode: "demo" | "live" = "demo") {
   const g = new Game();
   g.reset(mode);
@@ -48,10 +48,10 @@ test("boost causes measurable acceleration and greater travel distance, then dec
     boosted.tick(1 / 30);
   }
   assert.ok(boosted.state.ship.speed > 100);
-  assert.equal(normal.state.ship.speed, 53);
+  assert.equal(normal.state.ship.speed, BALANCE.cruise);
   assert.ok(boosted.state.distance - b > (normal.state.distance - a) * 1.6);
   for (let i = 0; i < 240; i++) boosted.tick(1 / 30);
-  assert.ok(boosted.state.ship.speed < 54);
+  assert.ok(boosted.state.ship.speed < BALANCE.cruise + 1);
 });
 test("countdown, pause and terminal state freeze mission simulation", () => {
   const g = new Game();
@@ -145,8 +145,69 @@ test("an impact consumes shields before hull and the shield block is credited", 
   ];
   g.tick(1 / 30);
   assert.equal(g.state.blocked, 1);
-  assert.ok(g.state.ship.shield < 34);
+  // A solo pilot takes scaled debris damage (17 x 0.4); shields still absorb it before the hull.
+  assert.ok(g.state.ship.shield < 50 - 17 * debrisScale(0) + 0.5);
   assert.ok(g.state.ship.hull > hull - 0.01);
+});
+test("debris damage scales with crew size and reaches full strength at five crew", () => {
+  const solo = launch("live");
+  const crewed = launch("live");
+  for (const name of ["a", "b", "c", "d", "e"]) crewed.chat(name, name, "join", false);
+  for (const g of [solo, crewed]) {
+    g.tick(1 / 30);
+    g.state.ship.shield = 0;
+    g.state.rocks = [{ id: 1, x: g.state.distance + g.state.ship.x + 2, y: g.state.ship.y, r: 20, rotation: 0, hit: false, speed: 0 }];
+    g.tick(1 / 30);
+  }
+  assert.equal(solo.state.debris, BALANCE.debrisFloor);
+  assert.equal(crewed.state.debris, 1);
+  assert.ok(100 - solo.state.ship.hull < 9);
+  assert.ok(100 - crewed.state.ship.hull > 16);
+});
+test("cruise alone reaches the jump gate inside the window; a solo pilot is not time-locked", () => {
+  assert.ok(WORLD.distance / BALANCE.cruise < WORLD.duration - 3);
+});
+test("!join boards a lobby crew on the least-staffed station without spending a charge", () => {
+  const g = new Game();
+  g.reset("live");
+  const shield = g.state.ship.shield;
+  assert.equal(g.chat("1", "Ada", "join", false).accepted, true);
+  assert.equal(g.chat("2", "Bo", "join", false).accepted, true);
+  assert.equal(g.chat("3", "Cy", "join", false).accepted, true);
+  assert.deepEqual(new Set(g.state.crew.map((c) => c.role)), new Set(["shield", "boost", "repair"]));
+  assert.equal(g.state.ship.shield, shield);
+  assert.equal(g.chat("1", "Ada", "join", false).accepted, false);
+  assert.equal(g.state.events.filter((e) => e.type === "join").length, 3);
+  assert.equal(parseCommand("!join"), "join");
+  assert.equal(parseCommand("!boost go"), "boost");
+});
+test("commands during the countdown precharge the ship instead of being rejected", () => {
+  const g = new Game();
+  g.reset("live");
+  g.start();
+  g.tick(1 / 30);
+  assert.ok(g.state.countdown > 0);
+  assert.equal(g.chat("v", "Viewer", "boost", false).accepted, true);
+  assert.equal(g.state.ship.boost, 22);
+});
+test("rejected chat commands are announced once per viewer, never flooding the feed", () => {
+  const g = launch("live");
+  g.state.ship.hull = 100;
+  assert.equal(g.chat("v", "Viewer", "repair", false).accepted, false);
+  assert.equal(g.chat("v", "Viewer", "repair", false).accepted, false);
+  const rejected = g.state.events.filter((e) => e.type === "rejected");
+  assert.equal(rejected.length, 1);
+  assert.match(rejected[0].text, /hull already full/);
+  assert.equal(rejected[0].name, "Viewer");
+  for (let i = 0; i < 20; i++) g.chat(`x${i}`, `x${i}`, "repair", false);
+  assert.ok(g.state.events.filter((e) => e.type === "rejected").length <= 4);
+});
+test("the exported history keeps the whole mission, beyond the 70 recent events", () => {
+  const g = launch();
+  for (let i = 0; i < 200; i++) g.event("system", `entry ${i}`);
+  assert.equal(g.state.events.length, 70);
+  assert.ok(g.history.length >= 201);
+  assert.equal(g.history.find((e) => e.text === "entry 0")?.text, "entry 0");
 });
 test("the reproducible rehearsal completes all rescues with genuine simulation physics", () => {
   const g = new Game();

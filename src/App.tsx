@@ -564,9 +564,11 @@ export function App() {
                   .map((event) => (
                     <div className={`feed-event ${event.type}`} key={event.id}>
                       <div className="feed-icon" style={{ color: event.color }}>
-                        {event.type === "command" ? (
+                        {event.type === "command" &&
+                        event.command &&
+                        event.command !== "join" ? (
                           (() => {
-                            const Icon = commandInfo[event.command!].icon;
+                            const Icon = commandInfo[event.command].icon;
                             return <Icon size={13} />;
                           })()
                         ) : event.type === "rescue" ? (

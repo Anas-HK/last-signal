@@ -1,7 +1,7 @@
 import WebSocket from "ws";
 import {
   parseCommand,
-  type Command,
+  type ChatCommand,
   type TwitchStatus,
 } from "../shared/types.js";
 import { AnonymousChat } from "./irc.js";
@@ -21,7 +21,7 @@ type Options = {
   clientId: string;
   clientSecret: string;
   redirectUri: string;
-  onCommand: (id: string, name: string, command: Command) => void;
+  onCommand: (id: string, name: string, command: ChatCommand) => void;
   fetch?: typeof fetch;
   socket?: (url: string) => WebSocket;
 };
@@ -118,6 +118,21 @@ export class Twitch {
       55 * 60 * 1000,
     );
     await this.connect(user.login);
+  }
+  /** Resolves once the transport is subscribed and receiving; rejects on error or timeout. */
+  async waitUntilConnected(timeoutMs: number) {
+    const started = Date.now();
+    while (this.status.status !== "connected") {
+      if (this.status.status === "error" || this.status.status === "offline")
+        throw new Error(this.status.error || "Twitch connection failed.");
+      if (Date.now() - started > timeoutMs) {
+        this.fail(
+          "Twitch did not confirm the chat subscription in time. Check the channel and try again.",
+        );
+        throw new Error(this.status.error);
+      }
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
   }
   async connectAnonymous(channel: string) {
     if (!/^[a-zA-Z0-9_]{1,25}$/.test(channel))

@@ -1,7 +1,7 @@
 import WebSocket from "ws";
 import {
   parseCommand,
-  type Command,
+  type ChatCommand,
   type TwitchStatus,
 } from "../shared/types.js";
 
@@ -69,7 +69,7 @@ export class AnonymousChat {
     private options: {
       channel: string;
       status: TwitchStatus;
-      onCommand: (id: string, name: string, command: Command) => void;
+      onCommand: (id: string, name: string, command: ChatCommand) => void;
       socket?: (url: string) => WebSocket;
     },
   ) {}
