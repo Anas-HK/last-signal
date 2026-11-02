@@ -1,16 +1,13 @@
 import fs from "node:fs";
 import { spawnSync } from "node:child_process";
 const root = "artifacts/demo";
-const offsets = [0, 11, 38, 25, 53, 68, 94, 109, 128];
-const speech = fs.readFileSync("scripts/narrate-demo.ps1", "utf8");
-const segments = [...speech.matchAll(/file='(\d+)'; text='([^']+)'/g)];
+const segments = JSON.parse(fs.readFileSync(`${root}/narration.json`, "utf8"));
 const cues = [];
 function stamp(seconds) {
   const ms = Math.round(seconds * 1000);
   return `${String(Math.floor(ms / 3600000)).padStart(2, "0")}:${String(Math.floor(ms / 60000) % 60).padStart(2, "0")}:${String(Math.floor(ms / 1000) % 60).padStart(2, "0")},${String(ms % 1000).padStart(3, "0")}`;
 }
 for (const match of segments) {
-  const id = Number(match[1]) - 1;
   const probe = spawnSync(
     "ffprobe",
     [
@@ -20,13 +17,13 @@ for (const match of segments) {
       "format=duration",
       "-of",
       "csv=p=0",
-      `${root}/voice/${match[1]}.wav`,
+      `${root}/voice/${match.file}.wav`,
     ],
     { encoding: "utf8" },
   );
   if (probe.status !== 0) throw new Error("ffprobe failed");
   const duration = Number(probe.stdout.trim());
-  const words = match[2].split(/\s+/);
+  const words = match.text.split(/\s+/);
   for (let n = 0; n < words.length; n += 12) {
     const part = words.slice(n, n + 12);
     const text =
@@ -34,9 +31,9 @@ for (const match of segments) {
         ? part.slice(0, 6).join(" ") + "\n" + part.slice(6).join(" ")
         : part.join(" ");
     cues.push({
-      start: offsets[id] + (n / words.length) * duration,
+      start: match.at + (n / words.length) * duration,
       end:
-        offsets[id] +
+        match.at +
         (Math.min(n + 12, words.length) / words.length) * duration,
       text,
     });

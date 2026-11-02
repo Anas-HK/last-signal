@@ -376,3 +376,47 @@ test("an unshot meteor hits the hull (shields first) and names who threw it", ()
   assert.ok(g.state.ship.hull < 90);
   assert.ok(g.state.events.some((e) => e.type === "hit" && e.name === "Heckler"));
 });
+
+test("bubble protects against large rocks and meteors, then expires", () => {
+  const g = launch("live");
+  g.state.ship.shield = 0;
+  g.state.ship.powerup = { kind: "bubble", owner: "Gifter", color: "#fff" };
+  const rock = rockAhead(g, 0, 35);
+  g.state.rocks = [rock];
+  g.chat("meteor-viewer", "Heckler", "meteor", false);
+  Object.assign(g.state.meteors[0], { warn: 0, x: g.state.ship.x, y: g.state.ship.y, vx: 0, vy: 0 });
+  g.input = { ...idle, use: true };
+  g.tick(1 / 30);
+  assert.equal(g.state.ship.powerup, null);
+  assert.ok(g.state.ship.bubble > 4.9);
+  assert.equal(rock.hit, true);
+  assert.equal(g.state.meteors.length, 0);
+  assert.ok(g.state.ship.hull > 99.9);
+  assert.equal(g.state.destroyed, 2);
+  g.state.rocks = [];
+  g.input = idle;
+  for (let i = 0; i < 151; i++) g.tick(1 / 30);
+  assert.equal(g.state.ship.bubble, 0);
+  g.state.rocks = [rockAhead(g, 0, 35)];
+  const hull = g.state.ship.hull;
+  g.tick(1 / 30);
+  assert.ok(g.state.ship.hull < hull - 5);
+});
+
+test("overdrive fires three lanes without heat, expires and restores the normal gun", () => {
+  const g = launch();
+  g.state.rocks = [];
+  g.state.ship.powerup = { kind: "overdrive", owner: "Gifter", color: "#fff" };
+  g.input = { ...idle, use: true, fire: true };
+  g.tick(1 / 30);
+  assert.equal(g.state.shots.length, 3);
+  assert.equal(new Set(g.state.shots.map((s) => s.y)).size, 3);
+  assert.equal(g.state.ship.heat, 0);
+  g.input = idle;
+  for (let i = 0; i < 181; i++) g.tick(1 / 30);
+  assert.equal(g.state.ship.rapid, 0);
+  g.input = { ...idle, fire: true };
+  g.tick(1 / 30);
+  assert.equal(g.state.shots.length, 1);
+  assert.ok(g.state.ship.heat > 0);
+});

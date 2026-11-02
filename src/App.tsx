@@ -916,6 +916,10 @@ export function App() {
         <span>
           Built with <strong>OpenAI Codex</strong>
           <span className="footer-dot">·</span>Made for Twitch communities
+          <span className="footer-dot">·</span>
+          <a href="https://github.com/Anas-HK/last-signal" target="_blank" rel="noreferrer">
+            Source on GitHub
+          </a>
         </span>
         <button className="text-button" onClick={() => setModal("help")}>
           Flight manual <ArrowUpRight size={13} />

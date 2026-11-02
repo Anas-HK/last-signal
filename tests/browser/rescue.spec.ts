@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import WebSocket from "ws";
+import { mkdirSync, writeFileSync } from "node:fs";
 import type { Snapshot } from "../../shared/types.js";
 const port = process.env.E2E_PORT || "3002";
 async function watch() {
@@ -148,6 +149,8 @@ test("a full real-time rehearsal wins, mirrors to OBS, and exports a correctly l
     expect(report.phase).toBe("won");
     expect(report.survivors).toBe(13);
     expect(report.crewActions).toBeGreaterThan(30);
+    mkdirSync("artifacts/validation", { recursive: true });
+    writeFileSync("artifacts/validation/final-mission.json", JSON.stringify(report, null, 2));
     expect(report.crew.every((c: { simulated: boolean }) => c.simulated)).toBe(
       true,
     );

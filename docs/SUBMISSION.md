@@ -1,43 +1,19 @@
 # Submission checklist
 
-- [x] Complete source and procedural assets.
-- [x] Git repository initialized.
-- [x] Installation, run, environment, Twitch and OBS documentation.
-- [x] Working, clearly labeled no-credential rehearsal.
-- [x] Project description and short blurb.
-- [x] Demo script under three minutes.
-- [x] Codex session ID recorded.
-- [x] Browser-test results entered in `VALIDATION.md`.
-- [x] Public repository created and source pushed.
-- [x] Real Twitch IRC channel joined and messages received without keys; user confirmed boost/shield.
-- [ ] Optional OAuth/EventSub authorization tested with a registered app (not required for IRC path).
-- [x] Demo recording exported under three minutes (2:32); final viewing checklist remains below.
-- [ ] YouTube upload is **Public**, link works when signed out.
-- [ ] Confirm session ID with `/status` and enter it in the submission form.
-- [ ] Submit repository, project description, public YouTube URL, and Codex session ID before the deadline.
+## Current upload package (2026-11-02)
 
-## Links and values
+- Source and download bundle: https://github.com/Anas-HK/last-signal/releases/tag/v1.0.0
+- Fresh demo: `last-signal-demo.mp4`, 2:48, 1920x1080 H.264/AAC, English subtitles, offline synthesized narration.
+- Gallery: `last-signal-gallery.zip`, with current screenshots, captions, project description, video upload copy and validation notes.
+- Game verification: 34 engine/adapter tests and 11 browser journeys passed; see `VALIDATION.md` for evidence and limits.
+- Use `PROJECT_DESCRIPTION.md` for submission text and `GALLERY.md` for image ordering/captions and YouTube copy.
+- Still required: user review, Public YouTube upload and signed-out link check, final session ID check, and submission form completion. GitHub release assets do not replace a Public YouTube URL.
+- Actual viewer-sent drop/meteor commands and optional OAuth/EventSub authorization remain unverified. Use the exact boundaries in `VALIDATION.md`.
+
+## Values for the form
 
 - Repository: https://github.com/Anas-HK/last-signal
-- Local product: http://localhost:3001
-- Local OBS view: http://localhost:3001/overlay
-- Public YouTube video: upload pending.
-- Local MP4: `artifacts/demo/last-signal-demo.mp4` (2:32, actual rehearsal recording, synthesized draft narration).
-- Captions: `artifacts/demo/last-signal-demo.srt`.
-- User chose to review and upload the YouTube video personally. After upload, set visibility to **Public**, verify the link signed out, and enter that URL in the hackathon form.
-- Codex session: `01a19ccf-e07f-7e72-9a32-fcae9d50c948`
-- Design canvas: https://superdesign.dev/teams/e0cb2fff-718e-4bb7-8150-f93a155ef1ff/projects/597d54cc-621a-4534-98ae-35d2ab50face
-
-## Suggested YouTube title
-
-LAST SIGNAL — Your Twitch Chat Is Your Crew | Codex × TwitchCon
-
-## Suggested YouTube description
-
-You fly. Chat keeps you alive.
-
-LAST SIGNAL turns Twitch viewers into a spaceship rescue crew. Type !shield, !boost or !repair. Coordinate three people across three stations for an ALL HANDS rescue pulse. Bring thirteen survivors home, then credit the people who kept the ship alive.
-
-Built with OpenAI Codex. React, TypeScript, Canvas, Node, and live read-only Twitch chat. OAuth/EventSub is an optional connection path.
-
-Include the repository link and clearly state whether this recording shows real Twitch messages or labeled simulated rehearsal.
+- Codex session ID: `01a19ccf-e07f-7e72-9a32-fcae9d50c948` (confirm with /status).
+- Public YouTube URL: upload pending; the user will review and upload personally.
+- Local game: http://localhost:3001
+- OBS browser source: http://localhost:3001/overlay

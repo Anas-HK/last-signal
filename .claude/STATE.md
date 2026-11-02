@@ -2,7 +2,7 @@
 Cooperative Twitch space-rescue game for the Codex x TwitchCon hackathon: the streamer flies and fights, Twitch chat crews the ship, sends power-up crates and throws meteors.
 
 ## Active goal
-Get the submission ready: the gameplay update has landed (pilot weapons, chat crates and meteors). Remaining: a real-Twitch test of `!drop` and `!meteor`, a fresh demo video, and the Devpost submission.
+Get the submission ready: the gameplay update has landed (pilot weapons, chat crates and meteors). Remaining: a real-Twitch test of `!drop` and `!meteor`, user review and Public YouTube upload of the refreshed 2:48 demo, and the Devpost submission.
 
 ## Done so far (this iteration)
 - Codex built the original product: game engine, Twitch anonymous IRC and OAuth/EventSub adapters, OBS overlay, React console, tests, CI, README, demo MP4 (commits 2dcdc13, f8eee0a; Codex session `01a19ccf-e07f-7e72-9a32-fcae9d50c948`, see docs/CODEX_SESSION.md).
@@ -33,3 +33,8 @@ Restart the game server on port 3001 so it runs the new code (stop the running `
 
 ## Last updated
 2026-11-02 by session segment 1, slug: hackathon-polish-gameplay
+
+## Final verification and submission refresh (Codex, 2026-11-02)
+- Node 24 build/check, 34 engine/adapter tests, 11 browser journeys and two post-footer smoke journeys passed. Full rehearsal: 106 seconds, 13 survivors, 47 actions, six blocks, four ALL HANDS pulses.
+- Actual Twitch console join, live launch, source rejection and disconnect pause passed on isolated port 3302. Zero new viewer messages; real !drop/!meteor and optional OAuth remain unverified. Port 3001 was not touched.
+- Refreshed gallery, project text, captions, and 168.2-second MP4. Current export: scripts/build-submission.mjs then scripts/caption-demo.mjs. GitHub v1.0.0 carries the assets. See docs/GALLERY.md, docs/SUBMISSION.md and docs/VALIDATION.md.

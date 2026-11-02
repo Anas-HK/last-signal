@@ -150,6 +150,7 @@ test("pilot laser, dash and chat gifts and meteors work through the real console
     await name.fill("troll_sim");
     await page.getByRole("button", { name: "!meteor", exact: true }).click();
     await expect.poll(() => observer.read().game.meteors.length).toBe(1);
+    await page.screenshot({ path: "docs/screen-chat-chaos.png", fullPage: true });
     await expect(page.getByRole("log")).toContainText("troll_sim");
     await canvas.focus();
     await page.keyboard.press("p");

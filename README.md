@@ -129,11 +129,14 @@ npm run check       # strict TypeScript validation
 npm test            # deterministic engine and EventSub fixture tests
 npx playwright install chromium
 npm run test:e2e    # builds and launches an isolated server :3002
+npx tsx scripts/verify-twitch.ts your_channel # opt-in, actual read-only Twitch handshake
 ```
 
 Development UI: `http://localhost:5173`. OAuth keeps the registered `http://localhost:3001/auth/twitch/callback`; after sign-in Twitch returns you to the page that started it (the Vite page in development, port 3001 in production). Only allowlisted origins are accepted as return targets. The Vite proxy forwards `/api`, `/auth`, and `/ws`. The production-style quickstart above is recommended for the demo. Set `E2E_PORT` to run the browser suite on another port.
 
 Browser tests cover actual keyboard movement, viewer input, pause/reset, source separation, setup dialogs, mobile overflow, unauthorized mutations, an entire real-time rescue, synchronized OBS results, and the downloadable mission report. The test server has Twitch credentials explicitly disabled. EventSub fixtures test authentication checks, subscription payloads, message deduplication, channel filtering, reconnection, and unsafe URL rejection. They do not claim to prove a live channel integration.
+
+Additional browser journeys catch a crate using keyboard steering, fire its power-up with E, reload a paused mission, check OBS setup and silent spectator audio, and reject malformed API requests and hostile WebSocket origins. Set `VERIFY_TWITCH_CHANNEL` to your channel name to include the opt-in real-network browser journey: connect through the console, launch live, reject simulated commands, and pause on disconnect. This check sends no Twitch chat messages and does not verify viewer-sent commands. Without that variable the real-network journey is skipped, keeping normal CI independent of Twitch availability.
 
 ## Architecture
 
@@ -160,8 +163,9 @@ Simulation and snapshots run at 30 Hz. The browser extrapolates the ship from th
 
 - [Project description](docs/PROJECT_DESCRIPTION.md)
 - Demo video: **YouTube link to be added after upload.**
-- Prepared demo MP4: `artifacts/demo/last-signal-demo.mp4` (2:32, full working rehearsal recorded before the polish pass; captions and synthesized draft narration).
-- Downloadable demo and captions: [GitHub release](https://github.com/Anas-HK/last-signal/releases/tag/v0.1.0).
+- Prepared demo MP4: `artifacts/demo/last-signal-demo.mp4` (fresh gameplay and an uncut rescue, with captions and offline synthesized narration).
+- Downloadable demo, captions and gallery ZIP: [GitHub release](https://github.com/Anas-HK/last-signal/releases/tag/v1.0.0).
+- [Gallery order, captions and upload copy](docs/GALLERY.md)
 - [Under-three-minute video script and recording instructions](docs/DEMO_SCRIPT.md)
 - [Submission checklist](docs/SUBMISSION.md)
 - [Codex session and development record](docs/CODEX_SESSION.md)
