@@ -17,6 +17,7 @@ Use the assets from the v1.0.0 GitHub release. The gallery ZIP contains fresh sc
 | 9 | `screen-broadcast.png` | OBS follows the same authoritative mission, with crew names and the rehearsal source label visible. |
 | 10 | `screen-result.png` | Three pods, 13 survivors, and credits for the crew who brought them home. |
 | 11 | `screen-live-connected.png` | Connected to actual Twitch IRC, with four real chat messages received. Live join, boost, drop and meteor were accepted. |
+| 12 | `screen-live-chat.png` | Actual Twitch viewer anashk999 sends join, boost, drop and meteor; the game accepts all four and catches the named crate. |
 
 ## Project title
 

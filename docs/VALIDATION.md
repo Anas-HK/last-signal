@@ -1,5 +1,7 @@
 # Validation record
 
+Latest live verification: at 19:11 UTC, viewer `anashk999` sent join, boost, drop and meteor in `#anashk123`; all four were accepted by the live game, and the named bubble-shield crate was caught. The revised videos show these actual messages and the four-message connection confirmation. See the real Twitch recording section below for details.
+
 ## Final submission verification (2026-11-02)
 
 Windows, Node.js 24.22.2, Chromium 156 (Playwright 1.64.1), isolated server on port 3302. The existing server on port 3001 was left untouched.
