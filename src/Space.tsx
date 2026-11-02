@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { GameState, Input } from "../shared/types";
-import { BALANCE, COLORS, WORLD } from "../shared/types";
+import { BALANCE, COLORS, POWERUPS, WORLD } from "../shared/types";
 import { playSound } from "./audio";
 
 type Props = {
@@ -28,6 +28,7 @@ type Ticker = { name: string; text: string; color: string; born: number; dim?: b
 const reduceMotion =
   typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 const clampN = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+const LASER_SPEED = 1000;
 const stars = Array.from({ length: 210 }, (_, i) => ({
   x: ((i * 7919 + 41) % 12000) / 10,
   y: ((i * 3319 + 127) % 6600) / 10,
@@ -155,6 +156,15 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
     let boostAt = -10,
       shieldAt = -10;
     let lastCount = 0;
+    let lastShot = 0,
+      lastBlast = 0,
+      boomAt = -10,
+      dashing = false,
+      novaAt = -10,
+      novaX = 0,
+      novaY = 0,
+      muzzleAt = -10;
+    const ghosts: { x: number; y: number; born: number }[] = [];
     // One callout per message: a repeat refreshes the existing one instead of stacking.
     const shout = (f: Float) => {
       const twin = floats.find((o) => o.text === f.text && elapsed - o.born < 1.2);
@@ -185,7 +195,7 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
       const burn = s.ship.afterburner ?? 0;
       const boostRatio = clampN(
         (velocity - BALANCE.cruise - burn * BALANCE.afterburner) /
-          (BALANCE.boosted - BALANCE.cruise),
+          (BALANCE.dash - BALANCE.cruise),
         0,
         1,
       );
@@ -202,6 +212,8 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
         distance = s.distance;
         // Opening the page mid-mission must not replay old effects or sounds.
         eventId = firstLoad ? (s.events.at(-1)?.id ?? 0) : 0;
+        lastShot = firstLoad ? (s.shots?.at(-1)?.id ?? 0) : 0;
+        lastBlast = firstLoad ? (s.blasts?.at(-1)?.id ?? 0) : 0;
         if (firstLoad)
           for (const e of s.events.slice(-4))
             if (e.name && (e.type === "command" || e.type === "join"))
@@ -313,7 +325,19 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
           return [Math.cos(a) * r, Math.sin(a) * r];
         });
         ctx.lineWidth = 1.3;
-        polygon(ctx, points, "#1b2932", "#53626a");
+        polygon(ctx, points, "#1b2932", rock.r > 28 && rock.hp === 1 ? "#f5b65d" : "#53626a");
+        if (rock.r > 28 && rock.hp === 1) {
+          ctx.strokeStyle = "#f5b65dcc";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(-rock.r * 0.7, -rock.r * 0.1);
+          ctx.lineTo(-rock.r * 0.1, rock.r * 0.15);
+          ctx.lineTo(rock.r * 0.25, -rock.r * 0.45);
+          ctx.moveTo(-rock.r * 0.1, rock.r * 0.15);
+          ctx.lineTo(rock.r * 0.1, rock.r * 0.7);
+          ctx.stroke();
+          ctx.lineWidth = 1.3;
+        }
         polygon(
           ctx,
           [
@@ -410,6 +434,67 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
         circle(ctx, 0, 0, 203, undefined, "#70ead840");
         ctx.restore();
         label(ctx, "JUMP GATE // HOME", x, 95, "#70ead8", 13, "center");
+      }
+      // Viewer crates: rotating hexagons with the power-up colour and the sender's name.
+      for (const d of s.drops ?? []) {
+        const pulse = 0.5 + Math.sin(elapsed * 6 + d.id) * 0.5;
+        glow(ctx, d.x, d.y, 60 + pulse * 16, `${d.color}30`);
+        ctx.save();
+        ctx.translate(d.x, d.y);
+        ctx.rotate(elapsed * 1.6);
+        const hex = Array.from({ length: 6 }, (_, i) => {
+          const a = (i / 6) * Math.PI * 2;
+          return [Math.cos(a) * 22, Math.sin(a) * 22];
+        });
+        ctx.lineWidth = 2.5;
+        polygon(ctx, hex, "#0b141dee", d.color);
+        ctx.restore();
+        ctx.textAlign = "center";
+        ctx.font = '600 18px "Space Grotesk", sans-serif';
+        ctx.fillStyle = d.color;
+        ctx.fillText(d.kind === "nova" ? "✦" : d.kind === "bubble" ? "◯" : "≫", d.x, d.y + 6);
+        label(ctx, d.owner, d.x, d.y - 34, "#ffffff", 10, "center");
+        label(ctx, POWERUPS[d.kind].name, d.x, d.y + 44, d.color, 9, "center");
+      }
+      // Meteors: a red warning line first (dodge it), then a burning rock with the thrower's name.
+      for (const m of s.meteors ?? []) {
+        if (m.warn > 0) {
+          const blink = 0.45 + Math.sin(elapsed * 18) * 0.35;
+          ctx.save();
+          ctx.globalAlpha = blink;
+          ctx.setLineDash([14, 10]);
+          ctx.strokeStyle = m.owner ? "#fb7c70" : "#d9a066";
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(W, m.y + (m.vy * (m.x - W)) / -m.vx);
+          ctx.lineTo(0, m.y + (m.vy * m.x) / -m.vx);
+          ctx.stroke();
+          ctx.restore();
+          const wy = clampN(m.y + (m.vy * (m.x - W + 60)) / -m.vx, 40, H - 40);
+          polygon(ctx, [[W - 30, wy - 16], [W - 12, wy + 14], [W - 48, wy + 14]], "#fb7c70");
+          ctx.textAlign = "center";
+          ctx.font = '700 16px "Space Grotesk", sans-serif';
+          ctx.fillStyle = "#070d15";
+          ctx.fillText("!", W - 30, wy + 10);
+          if (m.owner) label(ctx, `${m.owner.toUpperCase()}'S METEOR`, W - 64, wy + 5, "#fb7c70", 11, "right");
+          continue;
+        }
+        const angle = Math.atan2(m.vy, m.vx);
+        const tail = ctx.createLinearGradient(m.x, m.y, m.x - Math.cos(angle) * 140, m.y - Math.sin(angle) * 140);
+        tail.addColorStop(0, "#ffb070dd");
+        tail.addColorStop(1, "transparent");
+        ctx.strokeStyle = tail;
+        ctx.lineWidth = m.r * 1.3;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(m.x, m.y);
+        ctx.lineTo(m.x - Math.cos(angle) * 140, m.y - Math.sin(angle) * 140);
+        ctx.stroke();
+        ctx.lineCap = "butt";
+        glow(ctx, m.x, m.y, m.r * 3, "#ff7a5955");
+        circle(ctx, m.x, m.y, m.r, "#5a2a1c", "#ff9a5c");
+        circle(ctx, m.x - 5, m.y - 4, m.r * 0.45, "#ffb070");
+        if (m.owner) label(ctx, m.owner, m.x, m.y - m.r - 12, "#ffd0b5", 10, "center");
       }
       // Engine trails.
       const thrust = active ? 1 + boostRatio * 2.3 + burn * 1.2 : 0.45;
@@ -509,6 +594,29 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
         circle(ctx, 0, 0, 55, undefined, `rgba(112,234,216,${shield * 0.35})`);
         ctx.restore();
       }
+      // Dash: ghost copies trail the ship while it rams through the field.
+      if ((s.ship.dash ?? 0) > 0 && active) {
+        if (!ghosts.length || elapsed - ghosts[ghosts.length - 1].born > 0.035)
+          ghosts.push({ x: shipX, y: shipY, born: elapsed });
+        glow(ctx, shipX, shipY, 120, "rgba(191,233,255,0.22)");
+      }
+      while (ghosts.length && elapsed - ghosts[0].born > 0.3) ghosts.shift();
+      for (const g of ghosts) {
+        const age = (elapsed - g.born) / 0.3;
+        ctx.globalAlpha = (1 - age) * 0.35;
+        polygon(
+          ctx,
+          [[g.x - 29 - age * 60, g.y - 22], [g.x - 4 - age * 60, g.y - 30], [g.x + 47 - age * 60, g.y], [g.x - 4 - age * 60, g.y + 30], [g.x - 29 - age * 60, g.y + 22]],
+          "#bfe9ff",
+        );
+      }
+      ctx.globalAlpha = 1;
+      if ((s.ship.bubble ?? 0) > 0) {
+        const fade = Math.min(1, s.ship.bubble) * (s.ship.bubble < 1.2 ? 0.6 + Math.sin(elapsed * 20) * 0.4 : 1);
+        glow(ctx, shipX, shipY, 110, `rgba(245,211,107,${0.2 * fade})`);
+        ctx.lineWidth = 3;
+        circle(ctx, shipX, shipY, 68, undefined, `rgba(245,211,107,${0.85 * fade})`);
+      }
       // Rescue tug: readable silhouette, layered metal, illuminated cockpit.
       ctx.save();
       ctx.translate(shipX, shipY);
@@ -585,6 +693,37 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
       ctx.globalAlpha = 1;
       if (s.phase === "ready")
         label(ctx, "RSV-01  /  YOUR SHIP", shipX, shipY + 72, "#c4cec9", 9, "center");
+      const rapid = (s.ship.rapid ?? 0) > 0;
+      ctx.lineCap = "round";
+      for (const shot of s.shots ?? []) {
+        const x = shot.x + LASER_SPEED * age;
+        ctx.strokeStyle = rapid ? "rgba(255,154,92,0.35)" : "rgba(143,247,255,0.35)";
+        ctx.lineWidth = 12;
+        ctx.beginPath();
+        ctx.moveTo(x - 54, shot.y);
+        ctx.lineTo(x, shot.y);
+        ctx.stroke();
+        ctx.strokeStyle = rapid ? "#ffb070" : "#8ff7ff";
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(x - 50, shot.y);
+        ctx.lineTo(x, shot.y);
+        ctx.stroke();
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x - 36, shot.y);
+        ctx.lineTo(x, shot.y);
+        ctx.stroke();
+      }
+      ctx.lineCap = "butt";
+      if (elapsed - muzzleAt < 0.09 && active) {
+        glow(ctx, shipX + 52, shipY, 34, rapid ? "rgba(255,154,92,0.8)" : "rgba(143,247,255,0.8)");
+        circle(ctx, shipX + 50, shipY, 5, "#ffffff");
+      }
+      if ((s.ship.overheated ?? 0) > 0 && active)
+        for (let i = 0; i < 3; i++)
+          circle(ctx, shipX + 40 + Math.random() * 10, shipY - 6 - Math.random() * 16, 2 + Math.random() * 3, "#9aa5ad66");
       // Emit particles from real authoritative game events.
       for (const event of s.events) {
         if (event.id <= eventId) continue;
@@ -602,13 +741,27 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
             ? event.command === "shield"
               ? "SHIELD +18"
               : event.command === "boost"
-                ? "BOOST"
+                ? "FUEL +22"
                 : "REPAIR +8"
             : event.type === "join"
               ? "JOINED"
               : event.type === "rejected"
                 ? (event.text.split("· ")[1] ?? event.text)
-                : "";
+                : event.type === "drop"
+                  ? `SENT ${event.text.replace("sent a ", "")}`
+                  : event.type === "pickup"
+                    ? event.text.toUpperCase()
+                    : event.type === "powerup"
+                      ? event.text.toUpperCase()
+                      : event.type === "meteor"
+                        ? "THREW A METEOR"
+                        : event.type === "destroyed"
+                          ? "METEOR SHOT DOWN"
+                          : event.type === "hit"
+                            ? "METEOR HIT THE SHIP"
+                            : event.type === "blocked"
+                              ? "METEOR BLOCKED"
+                              : "";
         const same = ticker.at(-1);
         if (same && same.name === who && same.text.replace(/ ×\d+$/, "") === line) {
           const n = Number(/ ×(\d+)$/.exec(same.text)?.[1] ?? 1) + 1;
@@ -660,6 +813,27 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
           rings.push({ x: event.x ?? shipX, y: event.y ?? shipY, color: "#f5b65d", born: elapsed, life: 0.9, from: 20, to: 190, width: 4 });
           const survivors = /(\d+) survivors/.exec(event.text)?.[1];
           floats.push({ text: `+${survivors ?? ""} SURVIVORS`, sub: `${event.text.split(" ")[0]} RESCUED`, color: "#f5b65d", born: elapsed, x: W / 2, y: 250, big: true });
+        } else if (event.type === "pickup") {
+          shout({ text: event.text.replace(" caught", ""), sub: "PRESS E", color: event.color || "#ffffff", born: elapsed, x: shipX, y: shipY, attached: true });
+          pulse({ x: shipX, y: shipY, color: event.color || "#ffffff", born: elapsed, life: 0.6, from: 30, to: 120, width: 3, attached: true });
+        } else if (event.type === "powerup") {
+          const nova = event.text.startsWith("NOVA");
+          if (nova) {
+            novaAt = elapsed;
+            novaX = shipX;
+            novaY = shipY;
+            shakeAt = elapsed;
+            shakePower = 12;
+            flashAt = elapsed;
+            flashColor = "#e9f6ff";
+            flashPower = 0.55;
+          }
+          floats.push({ text: nova ? "NOVA!" : event.text.replace(" fired", "!"), sub: `from ${who}`, color: event.color || "#ffffff", born: elapsed, x: W / 2, y: 250, big: true });
+        } else if (event.type === "meteor") {
+          shakeAt = elapsed;
+          shakePower = 1.5;
+        } else if (event.type === "destroyed") {
+          shout({ text: "METEOR DOWN", color: "#ff9a5c", born: elapsed, x: shipX, y: shipY, attached: true });
         } else if (event.type === "sync") {
           shakeAt = elapsed;
           shakePower = 5;
@@ -669,6 +843,7 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
           pulse({ x: shipX, y: shipY, color: "#70ead8", born: elapsed, life: 1.1, from: 40, to: 260, width: 5, attached: true });
         }
         if (floats.length > 3) floats = floats.slice(-3);
+        while (floats.filter((f) => f.big).length > 2) floats.splice(floats.findIndex((f) => f.big), 1);
         if (
           ["rescue", "hit", "blocked", "command", "sync"].includes(event.type)
         ) {
@@ -694,6 +869,47 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
           }
         }
       }
+      if ((s.shots?.at(-1)?.id ?? 0) > lastShot) {
+        lastShot = s.shots.at(-1)!.id;
+        muzzleAt = elapsed;
+        playSound("laser");
+      }
+      for (const b of s.blasts ?? []) {
+        if (b.id <= lastBlast) continue;
+        lastBlast = b.id;
+        if (s.elapsed - b.t > 0.6) continue;
+        if (elapsed - boomAt > 0.05) {
+          boomAt = elapsed;
+          playSound(b.r > 14 ? "boom" : "crack");
+        }
+        if (b.r > 14) {
+          shakeAt = elapsed;
+          shakePower = Math.max(shakePower * (elapsed - shakeAt < 0.2 ? 1 : 0), Math.min(6, b.r / 6));
+          rings.push({ x: b.x, y: b.y, color: b.color, born: elapsed, life: 0.45, from: b.r * 0.4, to: b.r * 2.4, width: 3 });
+        }
+        for (let i = 0; i < (b.r > 14 ? 22 : 6); i++) {
+          const a = Math.random() * Math.PI * 2;
+          const life = 0.4 + Math.random() * 0.7;
+          particles.push({
+            x: b.x,
+            y: b.y,
+            vx: Math.cos(a) * (40 + Math.random() * 200),
+            vy: Math.sin(a) * (40 + Math.random() * 200),
+            life,
+            max: life,
+            color: i % 3 ? b.color : "#53626a",
+            r: 1.5 + Math.random() * (b.r > 14 ? 3.5 : 1.5),
+          });
+        }
+      }
+      const nowDashing = (s.ship.dash ?? 0) > 0;
+      if (nowDashing && !dashing) {
+        playSound("dash");
+        shakeAt = elapsed;
+        shakePower = 4;
+        boostAt = elapsed;
+      }
+      dashing = nowDashing;
       particles = particles.filter((p) => p.life > 0);
       for (const p of particles) {
         p.life -= dt;
@@ -734,6 +950,16 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
         ctx.stroke();
       }
       ctx.globalAlpha = 1;
+      const novaAge = elapsed - novaAt;
+      if (novaAge < 0.9) {
+        const k = novaAge / 0.9;
+        ctx.globalAlpha = 1 - k;
+        ctx.lineWidth = 18 * (1 - k) + 2;
+        circle(ctx, novaX, novaY, 40 + k * 1100, undefined, "#e9f6ff");
+        ctx.lineWidth = 4;
+        circle(ctx, novaX, novaY, 20 + k * 800, undefined, "#9fe2ff");
+        ctx.globalAlpha = 1;
+      }
       // Boost burst: a rush of speed lines for the first moments of every !boost.
       const boostAge = elapsed - boostAt;
       if (boostAge < 0.9) {
@@ -784,23 +1010,33 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
       // 2. One status banner (top centre), highest priority wins.
       if (!over && s.phase !== "ready" && s.countdown <= 0) {
         const pulseLeft = (s.overdriveUntil - s.elapsed) / 6;
+        const incoming = (s.meteors ?? []).find((m) => m.warn > 0);
+        const wall = s.rocks.some((r) => r.id >= 1000 && !r.hit && r.x - distance > 500 && r.x - distance < 1350);
         const banner =
-          pulseLeft > 0
-            ? { text: "ALL HANDS  ·  RESCUE RANGE ×2", color: "#70ead8", fill: pulseLeft }
-            : s.ship.hull < 35
-              ? { text: "HULL CRITICAL  ·  CHAT: !repair", color: "#fb7c70", fill: s.ship.hull / 100 }
-              : s.storm
-                ? { text: "DEBRIS STORM  ·  CHAT: !shield", color: "#f5b65d", fill: 0 }
-                : boostRatio > 0.1
-                  ? { text: `${burn > 0.3 ? "BOOST + AFTERBURNER" : "BOOST"}  ·  ${(velocity / 10).toFixed(1)} KM/S`, color: "#f5b65d", fill: s.ship.boost / 100 }
-                  : burn > 0.3
-                    ? { text: `AFTERBURNER  ·  ${(velocity / 10).toFixed(1)} KM/S`, color: "#9fe2ff", fill: burn }
-                    : null;
+          s.ship.hull < 35
+            ? { text: "HULL CRITICAL  ·  CHAT: !repair", color: "#fb7c70", fill: s.ship.hull / 100 }
+            : incoming
+              ? { text: incoming.owner ? `INCOMING  ·  ${incoming.owner.toUpperCase()}'S METEOR` : "COMET INCOMING", color: "#fb7c70", fill: incoming.warn / 1.3 }
+              : pulseLeft > 0
+                ? { text: "ALL HANDS  ·  RESCUE RANGE ×2", color: "#70ead8", fill: pulseLeft }
+                : (s.ship.bubble ?? 0) > 0
+                  ? { text: "BUBBLE SHIELD  ·  RAM ANYTHING", color: "#f5d36b", fill: s.ship.bubble / 5 }
+                  : (s.ship.rapid ?? 0) > 0
+                    ? { text: "OVERDRIVE GUNS  ·  HOLD SPACE", color: "#ff9a5c", fill: s.ship.rapid / 6 }
+                    : (s.ship.dash ?? 0) > 0
+                      ? { text: `DASH  ·  ${(velocity / 10).toFixed(1)} KM/S`, color: "#bfe9ff", fill: s.ship.dash / BALANCE.dashTime }
+                      : wall
+                        ? { text: "DEBRIS WALL  ·  FIND THE GAP OR BLAST IT", color: "#f5b65d", fill: 0 }
+                        : s.storm
+                          ? { text: "DEBRIS STORM  ·  CHAT: !shield", color: "#f5b65d", fill: 0 }
+                          : burn > 0.3
+                            ? { text: `AFTERBURNER  ·  ${(velocity / 10).toFixed(1)} KM/S`, color: "#9fe2ff", fill: burn }
+                            : null;
         if (banner) {
           mono(ctx, 17, 500);
           const w = ctx.measureText(banner.text).width + 48;
           const x = W / 2 - w / 2;
-          const blink = banner.color === "#fb7c70" ? 0.75 + Math.sin(elapsed * 8) * 0.25 : 1;
+          const blink = banner.color === "#fb7c70" ? 0.75 + Math.sin(elapsed * 10) * 0.25 : 1;
           ctx.globalAlpha = blink;
           card(ctx, x, 16, w, 42, "#070d15d9", `${banner.color}88`);
           ctx.textAlign = "center";
@@ -841,24 +1077,31 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
       if (!over) {
         const y = H - 72;
         card(ctx, 20, y, W - 40, 56);
-        const bar = (x: number, name: string, value: number, color: string) => {
+        const bar = (x: number, name: string, value: string, fill: number, color: string, ticks = 0) => {
           mono(ctx, 13);
           ctx.textAlign = "left";
           ctx.fillStyle = "#93a5ae";
           ctx.fillText(name, x, y + 23);
-          mono(ctx, 16, 500);
+          mono(ctx, 15, 500);
           ctx.textAlign = "right";
           ctx.fillStyle = color;
-          ctx.fillText(`${Math.ceil(value)}%`, x + 160, y + 23);
+          ctx.fillText(value, x + 132, y + 23);
           ctx.fillStyle = "#26343e";
-          ctx.fillRect(x, y + 34, 160, 6);
+          ctx.fillRect(x, y + 34, 132, 6);
           ctx.fillStyle = color;
-          ctx.fillRect(x, y + 34, 1.6 * clampN(value, 0, 100), 6);
+          ctx.fillRect(x, y + 34, 1.32 * clampN(fill, 0, 100), 6);
+          ctx.fillStyle = "#0b141d";
+          for (let i = 1; i < ticks; i++) ctx.fillRect(x + (132 / ticks) * i - 1, y + 34, 2, 6);
         };
-        bar(42, "HULL", s.ship.hull, s.ship.hull < 35 ? "#fb7c70" : "#e3e8df");
-        bar(226, "SHIELD", s.ship.shield, "#70ead8");
-        const routeX = 430,
-          routeW = 410,
+        const ship = s.ship;
+        bar(40, "HULL", `${Math.ceil(ship.hull)}%`, ship.hull, ship.hull < 35 ? "#fb7c70" : "#e3e8df");
+        bar(190, "SHIELD", `${Math.ceil(ship.shield)}%`, ship.shield, "#70ead8");
+        const dashes = Math.floor((ship.boost ?? 0) / BALANCE.dashCost);
+        bar(340, "⇧ DASH", dashes ? `×${dashes}` : "FUEL", ship.boost, dashes ? "#f5b65d" : "#6d7c85", 5);
+        const hot = (ship.overheated ?? 0) > 0;
+        bar(490, "␣ LASER", hot ? "HOT" : rapid ? "MAX" : "OK", hot ? 100 : (ship.heat ?? 0), hot ? "#fb7c70" : rapid ? "#ff9a5c" : "#8ff7ff");
+        const routeX = 660,
+          routeW = 300,
           routeY = y + 28;
         const at = routeX + Math.min(1, s.distance / WORLD.distance) * routeW;
         ctx.strokeStyle = "#34454c";
@@ -891,18 +1134,41 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
         ctx.fillStyle = "#93a5ae";
         ctx.fillText(`${s.people} SURVIVORS`, W - 40, y + 45);
       }
+      if (!over && s.ship.powerup) {
+        const held = s.ship.powerup;
+        const name = POWERUPS[held.kind].name;
+        mono(ctx, 15, 500);
+        const w = Math.max(ctx.measureText(name).width, ctx.measureText(`from ${held.owner}`).width) + 92;
+        const y = H - 136;
+        const throb = 0.6 + Math.sin(elapsed * 6) * 0.4;
+        card(ctx, 20, y, w, 54, "#070d15e6", held.color);
+        ctx.globalAlpha = throb;
+        card(ctx, 32, y + 12, 32, 30, `${held.color}33`, held.color);
+        ctx.globalAlpha = 1;
+        mono(ctx, 17, 700);
+        ctx.textAlign = "center";
+        ctx.fillStyle = held.color;
+        ctx.fillText("E", 48, y + 33);
+        ctx.textAlign = "left";
+        mono(ctx, 15, 500);
+        ctx.fillText(name, 78, y + 24);
+        mono(ctx, 12);
+        ctx.fillStyle = "#b9c6cb";
+        ctx.fillText(`from ${held.owner}`, 78, y + 42);
+      }
       // Callouts: impacts follow the ship; rescues and launch take the centre.
       floats = floats.filter((f) => elapsed - f.born < 1.6);
       floats.forEach((f, i) => {
         const p = (elapsed - f.born) / 1.6;
         const stack = floats.filter((o, j) => j > i && !o.big).length;
+        const bigIndex = floats.filter((o, j) => j < i && o.big).length;
         const above = shipY > 200;
         const fx = f.attached ? clampN(shipX, 140, W - 330) : f.x;
         const y = f.attached
           ? above
             ? shipY - 122 - p * 22 - stack * 34
             : shipY + 132 + p * 18 + stack * 34
-          : f.y - p * 34;
+          : f.y - p * 34 + bigIndex * 78;
         ctx.globalAlpha = Math.min(1, (1 - p) * 2.2);
         const pop = 1 + Math.max(0, 0.25 - p) * 1.4;
         ctx.textAlign = "center";
@@ -957,6 +1223,9 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
         down: keys.has("s") || keys.has("arrowdown"),
         left: keys.has("a") || keys.has("arrowleft"),
         right: keys.has("d") || keys.has("arrowright"),
+        fire: keys.has(" ") || keys.has("j"),
+        dash: keys.has("shift") || keys.has("k"),
+        use: keys.has("e") || keys.has("l"),
       };
       localInput.current = held;
       inputCallback.current?.(held);
@@ -984,11 +1253,19 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
           "arrowleft",
           "arrowright",
           " ",
+          "shift",
+          "e",
+          "j",
+          "k",
+          "l",
+          "p",
+          "escape",
         ].includes(key)
       ) {
         e.preventDefault();
-        if (key === " " && !e.repeat) pauseCallback.current?.();
-        else {
+        if (key === "p" || key === "escape") {
+          if (!e.repeat) pauseCallback.current?.();
+        } else if (!keys.has(key)) {
           keys.add(key);
           input();
         }
@@ -1032,7 +1309,7 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
       className="space-canvas"
       tabIndex={spectator ? -1 : 0}
       onPointerDown={(e) => e.currentTarget.focus()}
-      aria-label="Rescue flight. Click to pilot with W A S D or arrow keys. Fly into amber rings to rescue survivors. Space pauses."
+      aria-label="Rescue flight. Click to pilot: W A S D or arrows steer, Space fires, Shift dashes, E fires a power-up, P pauses. Fly into amber rings to rescue survivors."
       data-testid="flight-canvas"
     />
   );

@@ -13,6 +13,8 @@ import {
   Download,
   ExternalLink,
   Flag,
+  Flame,
+  Package,
   Heart,
   Maximize2,
   Music,
@@ -65,6 +67,9 @@ function shortText(event: GameState["events"][number]) {
     return `Joined · ${event.text.split("· ")[1]?.replace(" station", "") ?? "crew"}`;
   if (event.type === "rejected") return event.text.split("· ")[1] ?? event.text;
   if (event.type === "sync") return "ALL HANDS pulse";
+  if (event.type === "drop") return event.text.replace("sent a ", "Sent ");
+  if (event.type === "meteor") return "Threw a meteor";
+  if (event.type === "destroyed") return "Meteor shot down";
   if (event.type === "blocked") return "Impact blocked";
   if (event.type === "hit") return event.text.replace(" Crew, send !repair!", "");
   return event.text;
@@ -118,7 +123,7 @@ const commandInfo = {
   },
   boost: {
     icon: Zap,
-    name: "Engines",
+    name: "Dash fuel",
     action: "Beat the closing jump window.",
     detail: "+22 boost",
     key: "2",
@@ -415,13 +420,16 @@ export function App() {
       )}
       {active && !spectator && game.elapsed < 8 && (
         <div className="pilot-hint">
-          <span className="keycap">W</span>
-          <span className="keycap">A</span>
-          <span className="keycap">S</span>
-          <span className="keycap">D</span>
-          <span>Click flight to pilot</span>
+          <span className="keycap wide">WASD</span>
+          <span>fly</span>
           <i /> <span className="keycap wide">SPACE</span>
-          <span>Pause</span>
+          <span>fire</span>
+          <i /> <span className="keycap wide">SHIFT</span>
+          <span>dash</span>
+          <i /> <span className="keycap">E</span>
+          <span>power-up</span>
+          <i /> <span className="keycap">P</span>
+          <span>pause</span>
         </div>
       )}
       {!connected && (
@@ -454,6 +462,8 @@ export function App() {
             <code>!shield</code>
             <code>!boost</code>
             <code>!repair</code>
+            <code className="gift">!drop</code>
+            <code className="chaos">!meteor</code>
             <small>Repeat with a word: !boost go</small>
           </div>
           <span>
@@ -708,8 +718,9 @@ export function App() {
                     <div className={`feed-event ${event.type}`} key={event.id}>
                       <span className="feed-icon" style={{ color: event.color }}>
                         {event.type === "command" &&
-                        event.command &&
-                        event.command !== "join" ? (
+                        (event.command === "shield" ||
+                          event.command === "boost" ||
+                          event.command === "repair") ? (
                           (() => {
                             const Icon = commandInfo[event.command].icon;
                             return <Icon size={14} />;
@@ -720,6 +731,13 @@ export function App() {
                           <Zap size={14} />
                         ) : event.type === "join" ? (
                           <UserPlus size={14} />
+                        ) : event.type === "drop" ||
+                          event.type === "pickup" ||
+                          event.type === "powerup" ? (
+                          <Package size={14} />
+                        ) : event.type === "meteor" ||
+                          event.type === "destroyed" ? (
+                          <Flame size={14} />
                         ) : event.type === "rejected" ? (
                           <X size={14} />
                         ) : (
@@ -779,10 +797,16 @@ export function App() {
               <code>!shield</code> +18 shield
             </span>
             <span>
-              <code>!boost</code> speed
+              <code>!boost</code> dash fuel
             </span>
             <span>
               <code>!repair</code> +8 hull
+            </span>
+            <span className="chip-gift">
+              <code>!drop</code> send a power-up
+            </span>
+            <span className="chip-chaos">
+              <code>!meteor</code> chaos
             </span>
             <span className="chip-tip">
               repeat with a word: <code>!boost go</code>
@@ -841,7 +865,7 @@ export function App() {
                 aria-label="Simulated viewer name"
                 placeholder="your_name"
               />
-              {(["join", "shield", "boost", "repair"] as const).map((c) => (
+              {(["join", "shield", "boost", "repair", "drop", "meteor"] as const).map((c) => (
                 <button
                   className={`manual-button ${c}`}
                   disabled={!["ready", "running"].includes(game.phase)}
@@ -1100,14 +1124,23 @@ export function App() {
                     <h3>
                       <span className="role-number">01</span> You fly
                     </h3>
-                    <ul>
+                    <ul className="help-commands">
                       <li>
-                        <kbd>WASD</kbd> or arrows to steer
+                        <kbd>WASD</kbd> steer
                       </li>
-                      <li>Fly into the amber rings</li>
                       <li>
-                        <kbd>Space</kbd> pauses
+                        <kbd>Space</kbd> laser
                       </li>
+                      <li>
+                        <kbd>Shift</kbd> dash
+                      </li>
+                      <li>
+                        <kbd>E</kbd> power-up
+                      </li>
+                      <li>
+                        <kbd>P</kbd> pause
+                      </li>
+                      <li>Rings save pods</li>
                     </ul>
                   </section>
                   <section className="help-card">
@@ -1123,10 +1156,16 @@ export function App() {
                         <code>!shield</code> +18 shield
                       </li>
                       <li>
-                        <code>!boost</code> speed
+                        <code>!boost</code> dash fuel
                       </li>
                       <li>
                         <code>!repair</code> +8 hull
+                      </li>
+                      <li>
+                        <code>!drop</code> power-up
+                      </li>
+                      <li>
+                        <code>!meteor</code> chaos
                       </li>
                     </ul>
                     <p className="help-tip">
@@ -1139,8 +1178,8 @@ export function App() {
                     </h3>
                     <ul>
                       <li>Save 3 pods in 2 minutes</li>
+                      <li>Catch crates, blast meteors</li>
                       <li>3 viewers, 3 stations: ALL HANDS</li>
-                      <li>Everyone gets credited</li>
                     </ul>
                   </section>
                 </div>
@@ -1279,7 +1318,7 @@ function Results({
           </strong>
           <span>CREW</span>
           <em>
-            <CountUp to={game.actions} /> actions
+            <CountUp to={game.actions} /> actions · <CountUp to={game.destroyed ?? 0} /> rocks
           </em>
         </div>
         {crew[0] && crew[0].points > 0 && (

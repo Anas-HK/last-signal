@@ -124,3 +124,38 @@ test("control key, host allowlist and OAuth return stay locked down", async ({
   );
   expect(hostile.headers().location).toMatch(/^\/\?twitchError=Configure/);
 });
+
+test("pilot laser, dash and chat gifts and meteors work through the real console", async ({ page }) => {
+  const observer = await watch();
+  try {
+    await page.goto("/");
+    await page.getByLabel("Simulated crew", { exact: true }).uncheck();
+    await page.getByLabel("Training pilot", { exact: true }).uncheck();
+    const name = page.getByLabel("Simulated viewer name");
+    await name.fill("fuel_sim");
+    await page.getByRole("button", { name: "!boost", exact: true }).click();
+    await page.getByRole("button", { name: "Launch rescue" }).click();
+    await expect.poll(() => observer.read().game.countdown, { timeout: 7000 }).toBe(0);
+    const canvas = page.getByTestId("flight-canvas");
+    await canvas.focus();
+    await page.keyboard.down(" ");
+    await expect.poll(() => observer.read().game.ship.heat, { timeout: 4000 }).toBeGreaterThan(10);
+    await page.keyboard.up(" ");
+    await page.keyboard.press("Shift");
+    await expect.poll(() => observer.read().game.ship.dash, { timeout: 3000 }).toBeGreaterThan(0);
+    expect(observer.read().game.ship.boost).toBeLessThan(22);
+    await name.fill("gift_sim");
+    await page.getByRole("button", { name: "!drop", exact: true }).click();
+    await expect.poll(() => observer.read().game.drops.length).toBe(1);
+    await name.fill("troll_sim");
+    await page.getByRole("button", { name: "!meteor", exact: true }).click();
+    await expect.poll(() => observer.read().game.meteors.length).toBe(1);
+    await expect(page.getByRole("log")).toContainText("troll_sim");
+    await canvas.focus();
+    await page.keyboard.press("p");
+    await expect(page.getByRole("heading", { name: "Holding position." })).toBeVisible();
+    await page.getByRole("button", { name: "Reset mission", exact: true }).click();
+  } finally {
+    observer.ws.close();
+  }
+});

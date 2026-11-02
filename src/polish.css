@@ -607,3 +607,60 @@
 .full-button {
   font-size: 15px;
 }
+
+/* Chat gifts and chaos stand out in the chips and the OBS footer. */
+.command-chips .chip-gift code,
+.broadcast-instructions code.gift {
+  color: #e9f6ff;
+}
+.command-chips .chip-chaos code,
+.broadcast-instructions code.chaos {
+  color: #fb7c70;
+}
+.manual-button.drop {
+  color: #e9f6ff;
+  background: #1c2a36;
+  border-color: #e9f6ff33;
+}
+.manual-button.meteor {
+  color: #fb7c70;
+  background: #2f1d1c;
+  border-color: #fb7c7033;
+}
+.pilot-hint {
+  gap: 6px;
+  bottom: 96px;
+  opacity: 0.85;
+}
+.pilot-hint > span:not(.keycap) {
+  font-size: 12px;
+}
+.keycap {
+  height: 22px;
+  min-width: 22px;
+  font-size: 11px;
+}
+.keycap.wide {
+  padding: 0 6px;
+}
+@media (max-width: 640px) {
+  .station-name {
+    font-size: 12px;
+  }
+  .station-value {
+    font-size: 14px;
+  }
+  .station-bottom code {
+    font-size: 12px;
+  }
+  .command-station {
+    min-width: 0;
+    overflow: hidden;
+  }
+  .manual-command {
+    flex-wrap: wrap;
+  }
+  .stage-intro .lobby {
+    display: none;
+  }
+}
