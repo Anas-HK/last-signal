@@ -10,7 +10,7 @@ function probe(file) {
 const record = JSON.parse(fs.readFileSync(`${root}/recording.json`, "utf8"));
 const total = probe(`${root}/last-signal-captions-game-audio.mp4`);
 const first = (kind) => record.milestones.find((m) => m.feature === kind).at;
-const schedule = [0, 7, first("nova"), 23, first("overdrive"), first("bubble"), 76, 88, total - 9];
+const schedule = [0, 7, first("nova"), 20.5, first("overdrive"), first("bubble"), 76, 88, total - 9];
 const segments = schedule.map((at, i) => ({ index: i, at, duration: probe(`${root}/voice/${i}.wav`) })).sort((a, b) => a.at - b.at);
 for (let i = 0; i < segments.length; i++) {
   const segment = segments[i];

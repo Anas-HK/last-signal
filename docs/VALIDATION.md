@@ -15,7 +15,7 @@ Windows, Node.js 24.22.2, Chromium 156 (Playwright 1.64.1), isolated server on p
 
 Reproduce with `npm ci`, `npm test`, `npm run build`, `npx playwright install chromium`, and `npm run test:e2e`. Set `E2E_PORT=3302` for isolation and `VERIFY_TWITCH_CHANNEL=anashk123` to include the actual-network journey; otherwise that journey is skipped. Browser run output is saved locally in `final-browser-tests.log`.
 
-**Remaining boundaries:** viewer-sent `!drop` and `!meteor` are not verified against real chat in the final verification run. Their command parsing, live-mode engine routing and physics are fixture-tested, and their browser controls work in labeled rehearsal. OAuth/EventSub authorization remains unverified with a registered app. The OBS browser view is verified; this run did not operate the OBS desktop application. Mobile has no touch-flight controller, and the narrow flight view crops some edge labels. These limits are not presented as completed live testing.
+**Remaining boundaries:** OAuth/EventSub authorization remains unverified with a registered app. The OBS browser view is verified; this run did not operate the OBS desktop application. Mobile has no touch-flight controller, and the narrow flight view crops some edge labels. These limits are not presented as completed live testing.
 
 ## Earlier live viewer verification
 
@@ -25,6 +25,12 @@ On 2026-11-02, anonymous IRC connected to the actual Twitch channel and received
 
 A separate recording on isolated port 3304 used automated keyboard control with the built-in training pilot disabled and labeled simulated chat. It won in 92 seconds with all 13 survivors, 84 crew actions, five shield blocks and 11 ALL HANDS pulses. Nova, bubble and overdrive were caught and used. Canvas frames and the game music/effects were recorded together using MediaRecorder.
 
-Two approximately 108.3-second 1080p exports are provided: Grady neural narration plus game audio, and embedded captions plus game audio without narration. Captions are embedded below the HUD. The Grady voice is AI-generated using Seed Audio 1.0 through Higgsfield. Narration segments are checked for overlap and kept inside the runtime. The exports use peak limiting, and the narration mix ducks game audio during speech. The result image is from the same mission after its count animation completes.
+The initial 108.3-second showcase exports provided: Grady neural narration plus game audio, and embedded captions plus game audio without narration. Captions are embedded below the HUD. The Grady voice is AI-generated using Seed Audio 1.0 through Higgsfield. Narration segments are checked for overlap and kept inside the runtime. The exports use peak limiting, and the narration mix ducks game audio during speech. The result image is from the same mission after its count animation completes. The later revision appends actual live Twitch evidence and a confirmed connection, and delivers at 60 fps.
 
 Both final exports decoded without errors. Sampled frames confirmed the nova clear, bubble shield, triple lasers, caption placement and 13/13 result card. Decoded audio peaks measured -2.8 dBFS without narration and -3.3 dBFS with narration, leaving headroom below clipping. Both have H.264 video at 1920x1080 and AAC audio. Files and gallery screenshots are attached to the GitHub release.
+
+## Real Twitch command recording
+
+At 19:11 UTC on 2026-11-02, actual Twitch viewer `anashk999` sent `!join`, `!boost`, `!drop`, and `!meteor` in `#anashk123`. The live adapter accepted all four commands. The game spawned the named bubble-shield crate and meteor; the crate was caught and the viewer credited. The recorded live mission was in live mode with simulation and training pilot disabled, and finished with all 13 survivors. The connection dialog confirmed four real received messages. Exact command receipts and mission events are preserved locally in `artifacts/live-proof/recording.json`.
+
+The revised videos include a separate real-Twitch segment and the connection confirmation. Rehearsal command visualization is labeled simulated; the actual Twitch segment displays only commands received from Twitch. The gameplay area uses motion interpolation for 60 fps delivery; chat text is kept separate from interpolation to remain sharp.

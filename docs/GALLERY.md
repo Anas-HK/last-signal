@@ -16,7 +16,7 @@ Use the assets from the v1.0.0 GitHub release. The gallery ZIP contains fresh sc
 | 8 | `screen-all-hands.png` | Three viewers coordinate three stations within six seconds for an ALL HANDS rescue pulse. |
 | 9 | `screen-broadcast.png` | OBS follows the same authoritative mission, with crew names and the rehearsal source label visible. |
 | 10 | `screen-result.png` | Three pods, 13 survivors, and credits for the crew who brought them home. |
-| 11 | `screen-live-connected.png` | Connected to actual read-only Twitch IRC. This capture verifies connection only; its message count is zero. |
+| 11 | `screen-live-connected.png` | Connected to actual Twitch IRC, with four real chat messages received. Live join, boost, drop and meteor were accepted. |
 
 ## Project title
 
@@ -42,7 +42,7 @@ LAST SIGNAL is a Twitch co-op space rescue. The pilot steers, fires a laser, das
 
 The demo captures the actual game with labeled simulated chat, keyboard-controlled flight, all three power-ups being caught and fired, laser fire, dashes, named meteors, and a complete rescue of all 13 survivors. It uses automated keyboard control with the built-in training pilot disabled. Both versions include captured game music and effects and captions embedded below the flight HUD. The voiceover version uses AI-generated Grady narration through Higgsfield; the other version has no narration.
 
-Earlier real Twitch viewer-command evidence is documented in the validation record. Viewer-sent drop and meteor commands have not been verified against real chat. OAuth/EventSub remains optional and fixture-tested.
+The video also shows real Twitch viewer anashk999 sending join, boost, drop and meteor, all accepted by the live game. The connection dialog confirms four actual messages received. OAuth/EventSub remains optional and fixture-tested.
 
 Built with OpenAI Codex. React, TypeScript, Canvas, Node, Twitch read-only IRC, and an OBS spectator view. No paid inference service or game engine required.
 

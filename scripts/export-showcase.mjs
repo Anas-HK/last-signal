@@ -4,7 +4,7 @@ import fs from "node:fs";
 import { spawnSync } from "node:child_process";
 const root = "artifacts/showcase";
 function run(args) {
-  const result = spawnSync("ffmpeg", ["-y", "-hide_banner", "-loglevel", "error", ...args], { encoding: "utf8" });
+  const result = spawnSync("ffmpeg", ["-y", "-hide_banner", "-loglevel", "error", "-progress", "artifacts/showcase/encode-progress.txt", ...args], { encoding: "utf8" });
   if (result.status !== 0) throw new Error(result.stderr || String(result.error));
 }
 const record = JSON.parse(fs.readFileSync(`${root}/recording.json`, "utf8"));
@@ -41,8 +41,8 @@ const srtStamp = (t) => {
   return `${String(Math.floor(ms / 3600000)).padStart(2, "0")}:${String(Math.floor(ms / 60000) % 60).padStart(2, "0")}:${String(Math.floor(ms / 1000) % 60).padStart(2, "0")},${String(ms % 1000).padStart(3, "0")}`;
 };
 fs.writeFileSync(`${root}/last-signal-showcase.srt`, cues.map(([a, b, text], i) => `${i + 1}\n${srtStamp(a)} --> ${srtStamp(b)}\n${text.replaceAll("\\N", "\n")}\n`).join("\n"));
-const visual = `[0:v]scale=1746:960,pad=1920:1080:87:0:color=0x080d14,tpad=stop_mode=clone:stop_duration=4[game];[1:v]scale=1746:960:force_original_aspect_ratio=decrease,pad=1746:960:(ow-iw)/2:(oh-ih)/2:color=0x080d14[result];[game][result]overlay=87:0:enable='gte(t,${rawDuration - 5})',subtitles=artifacts/showcase/showcase.ass:fontsdir=public/fonts[v]`;
-run(["-i", `${root}/gameplay-with-audio.webm`, "-loop", "1", "-i", `${root}/result-stage.png`, "-filter_complex", visual, "-map", "[v]", "-map", "0:a", "-t", String(duration), "-c:v", "libx264", "-preset", "veryfast", "-crf", "19", "-pix_fmt", "yuv420p", "-r", "30", "-af", "apad=pad_dur=4,loudnorm=I=-18:TP=-1.5:LRA=11,alimiter=limit=0.5:level=false", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", `${root}/last-signal-captions-game-audio.mp4`]);
+const visual = `[0:v]split=2[layout][motion];[motion]crop=1200:660:16:100,scale=640:352,minterpolate=fps=60:mi_mode=mci:mc_mode=obmc:me_mode=bilat:me=epzs:mb_size=16:search_param=4,scale=1200:660:flags=lanczos,unsharp=3:3:0.4[smooth];[layout]fps=60,split=3[base][topSrc][bottomSrc];[topSrc]crop=1200:70:16:100[top];[bottomSrc]crop=1200:75:16:685[bottom];[base][smooth]overlay=16:100[mid];[mid][top]overlay=16:100[withTop];[withTop][bottom]overlay=16:685,scale=1920:1080,tpad=stop_mode=clone:stop_duration=4[game];[1:v]scale=1440:792:force_original_aspect_ratio=decrease,pad=1440:792:(ow-iw)/2:(oh-ih)/2:color=0x080d14[result];[game][result]overlay=19:120:enable='gte(t,${rawDuration - 5})',subtitles=artifacts/showcase/showcase.ass:fontsdir=public/fonts[v]`;
+run(["-i", `${root}/gameplay-with-audio.webm`, "-loop", "1", "-i", `${root}/result-stage.png`, "-filter_complex", visual, "-map", "[v]", "-map", "0:a", "-t", String(duration), "-c:v", "libx264", "-preset", "veryfast", "-crf", "19", "-pix_fmt", "yuv420p", "-r", "60", "-af", "apad=pad_dur=4,loudnorm=I=-18:TP=-1.5:LRA=11,alimiter=limit=0.5:level=false", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", `${root}/last-signal-captions-game-audio.mp4`]);
 if (process.argv[2]) {
   run(["-i", `${root}/last-signal-captions-game-audio.mp4`, "-i", process.argv[2], "-filter_complex", "[0:a]volume=0.4[game];[1:a]loudnorm=I=-16:TP=-1.5:LRA=9[voice];[game][voice]amix=inputs=2:duration=first:normalize=0,alimiter=limit=0.5:level=false[a]", "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", `${root}/last-signal-voiceover-game-audio.mp4`]);
 }
