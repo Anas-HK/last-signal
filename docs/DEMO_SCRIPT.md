@@ -5,7 +5,7 @@ Two 1080p H.264/AAC exports are available in the GitHub release:
 - `last-signal-voiceover-game-audio.mp4`: Grady neural narration and game music/effects, with no added subtitles. The narration uses Seed Audio 1.0 through Higgsfield and is AI-generated.
 - `last-signal-captions-game-audio.mp4`: embedded captions, game music and effects, with no narration.
 
-Both run for approximately 2:18. Captions occupy a separate lower band, keeping the flight HUD visible. Music ducks under narration in the voiceover version. The gameplay is continuous, followed by the result card from the same mission. The recording rescued all 13 survivors and shows nova bomb, bubble shield and overdrive guns being caught and fired, plus laser fire, dashes, named meteors and ALL HANDS.
+Both run for approximately 2:18. The voiceover version opens on the local website's ready screen before the mission begins. Captions occupy a separate lower band in the captioned version, keeping the flight HUD visible. The voiceover version has no added subtitles. Music ducks under narration in the voiceover version. The gameplay is continuous, followed by the result card from the same mission. The recording rescued all 13 survivors and shows nova bomb, bubble shield and overdrive guns being caught and fired, plus laser fire, dashes, named meteors and ALL HANDS.
 
 The footage uses labeled simulated chat and automated keyboard control with the built-in training pilot disabled. It is a capture of the actual game and its Web Audio output, not a rendered or scripted game outcome. The separate live section shows actual commands received from Twitch and a confirmed connection with four real messages.
 
