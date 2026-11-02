@@ -53,6 +53,22 @@ import {
   unlockAudio,
 } from "./audio";
 
+/** One short line per event for the crew feed. */
+function shortText(event: GameState["events"][number]) {
+  if (event.type === "command")
+    return event.command === "shield"
+      ? "Shield +18"
+      : event.command === "boost"
+        ? "Boost"
+        : "Repair +8";
+  if (event.type === "join")
+    return `Joined · ${event.text.split("· ")[1]?.replace(" station", "") ?? "crew"}`;
+  if (event.type === "rejected") return event.text.split("· ")[1] ?? event.text;
+  if (event.type === "sync") return "ALL HANDS pulse";
+  if (event.type === "blocked") return "Impact blocked";
+  if (event.type === "hit") return event.text.replace(" Crew, send !repair!", "");
+  return event.text;
+}
 /** Briefly true after a value rises, to pulse the meter that changed. */
 function useRise(value: number) {
   const previous = useRef(value);
@@ -87,7 +103,6 @@ function Station({ command, value }: { command: Command; value: number }) {
       </div>
       <div className="station-bottom">
         <code>!{command}</code>
-        <span>{info.action}</span>
       </div>
     </div>
   );
@@ -337,11 +352,6 @@ export function App() {
             <br />
             One way home.
           </h2>
-          <p>
-            You pilot the rescue ship.
-            <br />
-            Your chat is the crew keeping it alive.
-          </p>
           <div className="lobby" aria-live="polite">
             <span className="lobby-title">
               <UserPlus size={14} /> CREW BOARDING
@@ -360,8 +370,7 @@ export function App() {
               </div>
             ) : (
               <span className="lobby-empty">
-                Chat types <code>!join</code> to board. Solo works too: debris
-                eases off for small crews.
+                Chat types <code>!join</code> to board
               </span>
             )}
           </div>
@@ -404,7 +413,7 @@ export function App() {
           onReset={() => action("reset")}
         />
       )}
-      {active && !spectator && (
+      {active && !spectator && game.elapsed < 8 && (
         <div className="pilot-hint">
           <span className="keycap">W</span>
           <span className="keycap">A</span>
@@ -629,8 +638,8 @@ export function App() {
               </div>
               <span className="all-hands-description">
                 {game.overdriveUntil > game.elapsed
-                  ? "CREW SYNC ACTIVE · RESCUE RANGE ×2"
-                  : "3 viewers. 3 stations. 6 seconds. Double the rescue range."}
+                  ? "RESCUE RANGE ×2"
+                  : "3 viewers · 3 stations · 6 s"}
               </span>
               <span className="sync-count">
                 {game.bursts} {game.bursts === 1 ? "PULSE" : "PULSES"}
@@ -640,7 +649,6 @@ export function App() {
           <aside className="crew-panel">
             <div className="crew-heading">
               <div>
-                <span className="eyebrow">THE OTHER HALF OF YOUR SHIP</span>
                 <h2>
                   Your crew
                   <span className="crew-count">
@@ -663,6 +671,22 @@ export function App() {
               </span>
               <small>{live ? "LIVE" : "SIM"}</small>
             </div>
+            {game.crew.some((c) => c.points > 0) && (
+              <div className="leaderboard" aria-label="Top crew">
+                {[...game.crew]
+                  .sort((a, b) => b.points - a.points)
+                  .slice(0, 5)
+                  .map((c, i) => (
+                    <div className="leader-row" key={c.id}>
+                      <span className="leader-rank">{i + 1}</span>
+                      <span className="leader-name" style={{ color: c.color }}>
+                        {c.name}
+                      </span>
+                      <span className="leader-points">{c.points}</span>
+                    </div>
+                  ))}
+              </div>
+            )}
             <div className="crew-feed" role="log" aria-label="Crew activity">
               {game.events.length === 0 ? (
                 <div className="empty-crew">
@@ -671,55 +695,44 @@ export function App() {
                     <i />
                     <i />
                   </div>
-                  <h3>Every viewer has a station.</h3>
+                  <h3>Waiting for crew</h3>
                   <p>
-                    A shield at the right moment.
-                    <br />A repair when it matters.
-                    <br />A ship you bring home together.
+                    Type <code>!join</code> in chat
                   </p>
-                  <div className="feed-waiting">
-                    <span /> Awaiting launch
-                  </div>
                 </div>
               ) : (
                 [...game.events]
                   .reverse()
-                  .slice(0, 10)
+                  .slice(0, 8)
                   .map((event) => (
                     <div className={`feed-event ${event.type}`} key={event.id}>
-                      <div className="feed-icon" style={{ color: event.color }}>
+                      <span className="feed-icon" style={{ color: event.color }}>
                         {event.type === "command" &&
                         event.command &&
                         event.command !== "join" ? (
                           (() => {
                             const Icon = commandInfo[event.command].icon;
-                            return <Icon size={13} />;
+                            return <Icon size={14} />;
                           })()
                         ) : event.type === "rescue" ? (
-                          <Flag size={13} />
+                          <Flag size={14} />
                         ) : event.type === "hit" ? (
-                          <Zap size={13} />
+                          <Zap size={14} />
                         ) : event.type === "join" ? (
-                          <UserPlus size={13} />
+                          <UserPlus size={14} />
                         ) : event.type === "rejected" ? (
-                          <X size={13} />
+                          <X size={14} />
                         ) : (
-                          <Radio size={13} />
+                          <Radio size={14} />
                         )}
-                      </div>
-                      <div>
-                        {event.name && (
-                          <strong style={{ color: event.color }}>
-                            {event.name}
-                            {event.simulated && <small>SIM</small>}
-                          </strong>
-                        )}
-                        <p>{event.text}</p>
-                      </div>
-                      <time>
-                        {Math.floor(event.t / 60)}:
-                        {String(Math.floor(event.t % 60)).padStart(2, "0")}
-                      </time>
+                      </span>
+                      {event.name && (
+                        <strong style={{ color: event.color }}>
+                          {event.name}
+                          {event.simulated && <small>SIM</small>}
+                        </strong>
+                      )}
+                      <p>{shortText(event)}</p>
                     </div>
                   ))
               )}
@@ -758,18 +771,22 @@ export function App() {
           </aside>
         </div>
         <section className="under-flight">
-          <div className="role-explainer">
-            <span className="role-number">01</span>
-            <div>
-              <strong>You are the pilot.</strong>
-              <p>WASD to fly. Enter amber rings to rescue.</p>
-            </div>
-            <span className="role-separator" />
-            <span className="role-number cyan-text">02</span>
-            <div>
-              <strong>Chat is the lifeline.</strong>
-              <p>Type a command. Join the crew. Make a difference.</p>
-            </div>
+          <div className="command-chips" aria-label="Chat commands">
+            <span>
+              <code>!join</code> board
+            </span>
+            <span>
+              <code>!shield</code> +18 shield
+            </span>
+            <span>
+              <code>!boost</code> speed
+            </span>
+            <span>
+              <code>!repair</code> +8 hull
+            </span>
+            <span className="chip-tip">
+              repeat with a word: <code>!boost go</code>
+            </span>
           </div>
           <button
             className="text-button broadcast-link"
@@ -784,7 +801,6 @@ export function App() {
               <Settings2 size={17} />
               <div>
                 <strong>Rehearsal controls</strong>
-                <span>Try the real game with clearly simulated chat.</span>
               </div>
             </div>
             <div className="bench-switches">
@@ -921,9 +937,7 @@ export function App() {
                 <span className="eyebrow">GIVE YOUR CHAT A SPACESHIP</span>
                 <h2 id="modal-title">Connect your crew.</h2>
                 <p>
-                  Viewers type <code>!shield</code>, <code>!boost</code>, or{" "}
-                  <code>!repair</code> in Twitch chat. Their actions keep your
-                  ship alive, and their names become part of the mission.
+                  Your viewers become the crew, straight from Twitch chat.
                 </p>
                 <form
                   className="channel-form anonymous-form"
@@ -1079,51 +1093,56 @@ export function App() {
                 <div className="modal-symbol amber">
                   <Rocket size={26} />
                 </div>
-                <span className="eyebrow">FLIGHT MANUAL / RSV-01</span>
+                <span className="eyebrow">HOW TO PLAY</span>
                 <h2 id="modal-title">One ship. Two sides.</h2>
-                <p>
-                  Three escape pods are drifting through a debris field. You
-                  have two minutes to recover them and reach the jump gate.
-                  Rescue at least one pod to complete the mission.
-                </p>
-                <div className="manual-section">
-                  <span className="role-number">01</span>
-                  <div>
-                    <h3>The streamer flies.</h3>
-                    <p>
-                      Click the flight screen. Use WASD or arrow keys to move.
-                      Fly inside each amber rescue ring. Space pauses. Avoid
-                      asteroids; the storm sector hits harder.
+                <div className="help-cards">
+                  <section className="help-card">
+                    <h3>
+                      <span className="role-number">01</span> You fly
+                    </h3>
+                    <ul>
+                      <li>
+                        <kbd>WASD</kbd> or arrows to steer
+                      </li>
+                      <li>Fly into the amber rings</li>
+                      <li>
+                        <kbd>Space</kbd> pauses
+                      </li>
+                    </ul>
+                  </section>
+                  <section className="help-card">
+                    <h3>
+                      <span className="role-number cyan-text">02</span> Chat
+                      keeps you alive
+                    </h3>
+                    <ul className="help-commands">
+                      <li>
+                        <code>!join</code> board
+                      </li>
+                      <li>
+                        <code>!shield</code> +18 shield
+                      </li>
+                      <li>
+                        <code>!boost</code> speed
+                      </li>
+                      <li>
+                        <code>!repair</code> +8 hull
+                      </li>
+                    </ul>
+                    <p className="help-tip">
+                      Repeat with a word: <code>!boost go</code>
                     </p>
-                  </div>
-                </div>
-                <div className="manual-section">
-                  <span className="role-number cyan-text">02</span>
-                  <div>
-                    <h3>The community keeps you alive.</h3>
-                    <p>
-                      <code>!join</code> boards the crew before launch.{" "}
-                      <code>!shield</code> adds 18 shield. <code>!boost</code>{" "}
-                      adds 22 engine charge, nearly doubling your speed.{" "}
-                      <code>!repair</code> restores 8 hull. Each viewer has a
-                      2-second cooldown; full systems reject extra actions and
-                      the feed says why. Twitch can block sending the exact
-                      same message twice in a row, so add any word to repeat:{" "}
-                      <code>!boost go</code>. Debris hits softer for small
-                      crews, full strength from five crew.
-                    </p>
-                  </div>
-                </div>
-                <div className="manual-section">
-                  <span className="role-number">03</span>
-                  <div>
-                    <h3>Everyone gets the credit.</h3>
-                    <p>
-                      Every accepted action adds a named crew drone and
-                      contribution points. The final manifest credits your whole
-                      crew. Download the mission log to keep the story.
-                    </p>
-                  </div>
+                  </section>
+                  <section className="help-card">
+                    <h3>
+                      <span className="role-number">03</span> Win together
+                    </h3>
+                    <ul>
+                      <li>Save 3 pods in 2 minutes</li>
+                      <li>3 viewers, 3 stations: ALL HANDS</li>
+                      <li>Everyone gets credited</li>
+                    </ul>
+                  </section>
                 </div>
                 <button
                   className="button primary full-button"
@@ -1140,11 +1159,7 @@ export function App() {
                 </div>
                 <span className="eyebrow">READY FOR YOUR NEXT STREAM</span>
                 <h2 id="modal-title">Bring the crew on screen.</h2>
-                <p>
-                  Add a Browser Source in OBS. The broadcast view mirrors this
-                  exact mission, including viewer names, rescues, and the
-                  mission result.
-                </p>
+                <p>Add this URL as a Browser Source in OBS.</p>
                 <label className="field-label">BROWSER SOURCE URL</label>
                 <div className="copy-field">
                   <input
@@ -1171,10 +1186,8 @@ export function App() {
                   </span>
                 </div>
                 <p className="modal-footnote">
-                  Keep this pilot console open. OBS is a spectator and cannot
-                  control the ship. In OBS, leave “Shutdown source when not
-                  visible” unchecked. Simulated chat stays visibly labeled in
-                  the broadcast.
+                  Keep this console open. In OBS, untick “Shutdown source when
+                  not visible”.
                 </p>
                 <a
                   className="button primary full-button"
@@ -1246,63 +1259,45 @@ function Results({
           : "MISSION ENDED / SIGNAL LOST"}
       </span>
       <h2>{won ? "You brought them home." : "One more signal."}</h2>
-      <p>{game.reason}</p>
-      <div className="result-pods" aria-label="Escape pods">
-        {game.pods.map((pod) => (
-          <span key={pod.id} className={`result-pod ${pod.status}`}>
-            {pod.status === "rescued" ? <Check size={13} /> : <X size={13} />}
-            {pod.name}
-          </span>
-        ))}
-      </div>
-      <div className="result-stats">
-        <span>
+      {!won && <p>{game.reason}</p>}
+      <div className="result-cards">
+        <div className="result-card">
           <strong>
             <CountUp to={game.people} />
+            <small>/13</small>
           </strong>
-          SURVIVORS
-        </span>
-        <span>
+          <span>SURVIVORS</span>
+          <div className="result-pods" aria-label="Escape pods">
+            {game.pods.map((pod) => (
+              <i key={pod.id} className={pod.status} title={pod.name} />
+            ))}
+          </div>
+        </div>
+        <div className="result-card">
           <strong>
             <CountUp to={game.crew.length} />
           </strong>
-          CREW MEMBERS
-        </span>
-        <span>
-          <strong>
-            <CountUp to={game.actions} />
-          </strong>
-          CREW ACTIONS
-        </span>
-        <span>
-          <strong>
-            <CountUp to={game.blocked} />
-          </strong>
-          IMPACTS BLOCKED
-        </span>
-      </div>
-      {crew[0] && crew[0].points > 0 && (
-        <div className="result-mvp" style={{ color: crew[0].color }}>
-          <Trophy size={16} /> MVP <strong>{crew[0].name}</strong>
-          <small>
-            {crew[0].points} pts · {crew[0].actions} actions
-          </small>
+          <span>CREW</span>
+          <em>
+            <CountUp to={game.actions} /> actions
+          </em>
         </div>
-      )}
-      {crew.length > 0 && (
-        <div className="mission-credits">
-          <span className="eyebrow">THIS RESCUE WAS POWERED BY</span>
-          <div>
-            {crew.slice(0, 12).map((c) => (
-              <span key={c.id} style={{ color: c.color }}>
-                {c.name}
-                <small>{c.points} pts</small>
-              </span>
-            ))}
+        {crew[0] && crew[0].points > 0 && (
+          <div className="result-card mvp" style={{ color: crew[0].color }}>
+            <Trophy size={20} />
+            <b>{crew[0].name}</b>
+            <span>MVP · {crew[0].points} PTS</span>
           </div>
-          {crew.length > 12 && (
-            <small>and {crew.length - 12} more crew members.</small>
-          )}
+        )}
+      </div>
+      {crew.length > 1 && (
+        <div className="result-crew">
+          {crew.slice(1, 4).map((c) => (
+            <span key={c.id} style={{ color: c.color }}>
+              {c.name}
+            </span>
+          ))}
+          {crew.length > 4 && <span className="more">+{crew.length - 4} crew</span>}
         </div>
       )}
       {!spectator && (
@@ -1316,10 +1311,7 @@ function Results({
         </div>
       )}
       <span className="result-source">
-        {game.mode === "demo"
-          ? "REHEARSAL · SIMULATED CHAT"
-          : "TWITCH LIVE CREW"}{" "}
-        · BUILT WITH CODEX
+        {game.mode === "demo" ? "REHEARSAL · SIMULATED CHAT" : "TWITCH LIVE CREW"}
       </span>
     </div>
   );

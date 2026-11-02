@@ -227,56 +227,6 @@
     opacity: 1;
   }
 }
-.result-pods {
-  display: flex;
-  gap: 8px;
-  margin-top: 14px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-.result-pod {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border-radius: 4px;
-  font-family: var(--mono);
-  font-size: 12px;
-  letter-spacing: 1px;
-  border: 1px solid #34454f;
-  color: #8b9aa4;
-}
-.result-pod.rescued {
-  color: var(--amber);
-  border-color: #f5b65d66;
-  background: #f5b65d12;
-}
-.result-pod.missed,
-.result-pod.waiting {
-  color: #c99087;
-  border-color: #fb7c7044;
-}
-.result-mvp {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 14px;
-  padding: 8px 14px;
-  border: 1px solid currentColor;
-  border-radius: 999px;
-  font-family: var(--mono);
-  font-size: 12px;
-  letter-spacing: 1px;
-  animation: rise-in 0.6s 0.4s ease-out both;
-}
-.result-mvp strong {
-  font-size: 14px;
-  color: #f4f1e8;
-}
-.result-mvp small {
-  color: #9db0b6;
-}
-
 /* OBS footer: command chips large enough to read on stream. */
 .broadcast-instructions small {
   font-family: var(--mono);
@@ -300,8 +250,360 @@
   .lobby-empty {
     font-size: 11px;
   }
-  .result-pod {
-    font-size: 10px;
-    padding: 4px 7px;
+}
+
+/* ===== Declutter pass: fewer words, larger type, information in cards. ===== */
+.eyebrow {
+  font-size: 11px;
+}
+.mission-title,
+.source-label,
+.mission-time > small {
+  font-size: 12px;
+}
+.mission-objective,
+.text-button,
+.crew-source,
+.crew-total,
+.switch-label {
+  font-size: 13px;
+}
+.station-name {
+  font-size: 15px;
+}
+.station-value {
+  font-size: 19px;
+}
+.station-bottom {
+  margin-top: 12px;
+}
+.station-bottom code {
+  font-size: 15px;
+}
+.all-hands strong,
+.all-hands-description,
+.sync-count,
+.sync-links > span {
+  font-size: 13px;
+}
+.manual-button {
+  font-size: 13px;
+  padding: 9px 12px;
+}
+.manual-command input {
+  font-size: 13px;
+}
+.bench-label strong {
+  font-size: 15px;
+}
+.site-footer,
+.site-footer .text-button {
+  font-size: 13px;
+}
+.lobby-names {
+  font-size: 15px;
+}
+.lobby-empty {
+  font-size: 15px;
+}
+
+/* Crew panel: leaderboard card and a one-line feed. */
+.leaderboard {
+  margin: 14px 20px 4px;
+  padding: 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #0a121b;
+}
+.leader-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+  font-family: var(--mono);
+  font-size: 14px;
+}
+.leader-row + .leader-row {
+  border-top: 1px solid #1d2a34;
+}
+.leader-rank {
+  width: 18px;
+  color: #5d7381;
+}
+.leader-row:first-child .leader-rank {
+  color: var(--amber);
+}
+.leader-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.leader-points {
+  color: #e8e6dc;
+}
+.feed-event {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 0;
+}
+.feed-event .feed-icon {
+  margin: 0;
+  display: inline-flex;
+}
+.feed-event strong {
+  font-size: 14px;
+  flex-shrink: 0;
+  max-width: 48%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.feed-event strong small {
+  font-size: 10px;
+}
+.feed-event p {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.3;
+  color: #9fb0b8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.feed-event:not(:has(strong)) p {
+  color: #c9d3d4;
+}
+.empty-crew h3 {
+  font-size: 16px;
+}
+.empty-crew p {
+  font-size: 14px;
+}
+.empty-crew code {
+  color: var(--cyan);
+}
+
+/* Under the flight: the commands as chips. */
+.command-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.command-chips > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #0c141d;
+  font-size: 13px;
+  color: #b8c5ca;
+}
+.command-chips code {
+  font-size: 14px;
+  color: var(--amber);
+}
+.command-chips > span:nth-child(1) code,
+.command-chips > span:nth-child(2) code {
+  color: var(--cyan);
+}
+.command-chips > span:nth-child(4) code {
+  color: #c2a2ff;
+}
+.command-chips .chip-tip {
+  border-style: dashed;
+  color: #8b9aa4;
+}
+.broadcast-link {
+  font-size: 14px;
+}
+
+/* Help: three cards. */
+.help-cards {
+  display: grid;
+  gap: 12px;
+  margin: 6px 0 4px;
+}
+.help-card {
+  padding: 16px 18px;
+  border: 1px solid #2b3d4a;
+  border-radius: 10px;
+  background: #0c141d;
+}
+.help-card h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 17px;
+  font-weight: 500;
+  margin: 0 0 10px;
+}
+.help-card ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+  font-size: 15px;
+  color: #c4d0d4;
+}
+.help-card .help-commands {
+  grid-template-columns: 1fr 1fr;
+}
+.help-card code {
+  font-size: 15px;
+  color: var(--amber);
+}
+.help-card kbd {
+  font-family: var(--mono);
+  font-size: 13px;
+  padding: 2px 7px;
+  border: 1px solid #3a4c58;
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  color: #e6ebe8;
+}
+.help-tip {
+  margin-top: 10px !important;
+  font-size: 13px !important;
+  color: #8b9aa4 !important;
+}
+
+/* Results: three cards and the next three crew members. */
+.result-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 170px));
+  gap: 12px;
+  margin: 18px 0 14px;
+}
+.result-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 12px;
+  border: 1px solid #2c3e4b;
+  border-radius: 12px;
+  background: #0b141dd9;
+  animation: rise-in 0.5s ease-out both;
+}
+.result-card:nth-child(2) {
+  animation-delay: 0.1s;
+}
+.result-card:nth-child(3) {
+  animation-delay: 0.2s;
+}
+.result-card strong {
+  font-size: 40px;
+  font-weight: 500;
+  line-height: 1;
+  color: #f1d4a3;
+}
+.result-card strong small {
+  font-size: 18px;
+  color: #6f8592;
+}
+.result-card > span {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 1.2px;
+  color: #8ea2ad;
+}
+.result-card em {
+  font-style: normal;
+  font-size: 13px;
+  color: #7f939e;
+}
+.result-card.mvp {
+  border-color: currentColor;
+  justify-content: center;
+}
+.result-card.mvp b {
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 500;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.result-pods {
+  display: flex;
+  gap: 6px;
+}
+.result-pods i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #fb7c70;
+}
+.result-pods i.rescued {
+  background: var(--amber);
+  box-shadow: 0 0 8px #f5b65d88;
+}
+.result-crew {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 15px;
+}
+.result-crew .more {
+  color: #7f939e;
+}
+.results-layer > p {
+  font-size: 15px;
+}
+.result-actions .button {
+  font-size: 14px;
+  min-height: 42px;
+}
+.result-source {
+  font-size: 11px;
+}
+@media (max-width: 900px) {
+  .result-cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
   }
+  .result-card strong {
+    font-size: 30px;
+  }
+}
+@media (max-width: 640px) {
+  .result-card {
+    padding: 10px 6px;
+  }
+  .result-card strong {
+    font-size: 22px;
+  }
+  .result-card > span,
+  .result-card em {
+    font-size: 10px;
+  }
+  .result-card.mvp b {
+    font-size: 12px;
+  }
+  .result-crew {
+    font-size: 12px;
+  }
+  .command-chips > span {
+    font-size: 12px;
+    padding: 6px 9px;
+  }
+}
+
+/* Keep the crew panel no taller than the mission panel; the feed scrolls. */
+.crew-feed {
+  min-height: 150px;
+}
+.full-button {
+  font-size: 15px;
 }
