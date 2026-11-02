@@ -5,6 +5,10 @@ dist/
 !.env.example
 test-results/
 playwright-report/
-.superdesign/tmp/
+.superdesign/
 *.log
 artifacts/
+
+# Local agent handoffs and development notes
+.claude/
+docs/SPRINT.md

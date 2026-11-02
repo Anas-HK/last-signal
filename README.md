@@ -169,10 +169,9 @@ Simulation and snapshots run at 30 Hz. The browser extrapolates the ship from th
 - [Under-three-minute video script and recording instructions](docs/DEMO_SCRIPT.md)
 - [Submission checklist](docs/SUBMISSION.md)
 - [Codex session and development record](docs/CODEX_SESSION.md)
-- [Sprint decisions](docs/SPRINT.md)
 
 **Codex session ID:** `01a19ccf-e07f-7e72-9a32-fcae9d50c948`. It was captured from this active session's environment. Confirm with `/status` in Codex before submitting.
 
 ## Credits
 
-The original product, implementation, tests, and iterative debugging were built in this Codex session (see [CODEX_SESSION.md](docs/CODEX_SESSION.md)). Later polish commits are listed separately in the Git history. A [Superdesign draft](https://superdesign.dev/teams/e0cb2fff-718e-4bb7-8150-f93a155ef1ff/projects/597d54cc-621a-4534-98ae-35d2ab50face) supported the visual direction. The game artwork is procedural Canvas code. Fonts are bundled locally under their SIL Open Font Licenses in `public/fonts`. UI icons: Lucide (ISC). Application code: MIT.
+The product was built and tested with OpenAI Codex; see [CODEX_SESSION.md](docs/CODEX_SESSION.md) for the session reference. Superdesign supported the initial visual direction. The game artwork is procedural Canvas code. Fonts are bundled locally under their SIL Open Font Licenses in `public/fonts`. UI icons: Lucide (ISC). Application code: MIT.
