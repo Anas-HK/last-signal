@@ -24,17 +24,22 @@ run(["-ss",String(start),"-i",`${live}/gameplay-with-audio.webm`,"-filter_comple
 run(["-i",`${live}/live-chat-clean.mp4`,"-vf","subtitles=artifacts/live-proof/captions.ass:fontsdir=public/fonts","-c:v","libx264","-preset","veryfast","-crf","17","-c:a","copy",`${live}/live-chat-clip.mp4`]);
 run(["-i",`${live}/live-chat-clip.mp4`,"-loop","1","-i",`${live}/connection-confirmed.png`,"-filter_complex","[1:v]scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0x080d14[v]","-map","[v]","-map","0:a","-t","5","-r","60","-c:v","libx264","-preset","veryfast","-crf","17","-pix_fmt","yuv420p","-c:a","aac","-b:a","192k",`${live}/connection-clip.mp4`]);
 }
-for (const variant of ["voiceover", "captions"]) {
+const variants = process.argv.includes("--voiceover-only") ? ["voiceover"] : ["voiceover", "captions"];
+for (const variant of variants) {
   const name=`last-signal-${variant}-game-audio.mp4`;
   const files=[`artifacts/showcase/${name}`,`${live}/${variant === "voiceover" ? "live-chat-clean.mp4" : "live-chat-clip.mp4"}`,`${live}/connection-clip.mp4`];
   fs.writeFileSync(`${out}/concat-${variant}.txt`,files.map((file)=>`file '${path.resolve(file).replaceAll("\\","/")}'`).join("\n"));
-  const filter=files.map((_,i)=>`[${i}:v]setpts=PTS-STARTPTS[v${i}];[${i}:a]aresample=48000,asetpts=PTS-STARTPTS[a${i}]`).join(";")+";"+files.map((_,i)=>`[v${i}][a${i}]`).join("")+"concat=n=3:v=1:a=1,fps=60[v][a]";
-  const fixed=filter.replace("concat=n=3:v=1:a=1,fps=60[v][a]","concat=n=3:v=1:a=1[cv][a];[cv]fps=60[v]");
+  const opening=variant === "voiceover"
+    ? "[0:v]split[openingSrc][restSrc];[openingSrc]trim=end=3.6,setpts=PTS-STARTPTS,zoompan=z='1+0.05*sin(PI*on/216)':x='(iw-iw/zoom)/2+0.25*(iw-iw/zoom)*sin(2*PI*on/216)':y='(ih-ih/zoom)/2+0.25*(ih-ih/zoom)*cos(2*PI*on/216)':d=1:s=1920x1080:fps=60,setsar=1[opening];[restSrc]trim=start=3.6,setpts=PTS-STARTPTS[baseRest];[opening][baseRest]concat=n=2:v=1:a=0[base]"
+    : "[0:v]setpts=PTS-STARTPTS[base]";
+  const rest=files.slice(1).map((_,i)=>`[${i+1}:v]setpts=PTS-STARTPTS[v${i+1}]`).concat(files.map((_,i)=>`[${i}:a]aresample=48000,asetpts=PTS-STARTPTS[a${i}]`)).join(";");
+  const inputs="[base][a0]"+files.slice(1).map((_,i)=>`[v${i+1}][a${i+1}]`).join("");
+  const fixed=`${opening};${rest};${inputs}concat=n=3:v=1:a=1[cv][a];[cv]fps=60[v]`;
   run([...files.flatMap(file=>["-i",file]),"-filter_complex",fixed,"-map","[v]","-map","[a]","-c:v","libx264","-preset","veryfast","-crf","17","-pix_fmt","yuv420p","-r","60","-c:a","aac","-ar","48000","-b:a","192k","-movflags","+faststart",`${out}/${name}`]);
 }
 const baseDuration=duration("artifacts/showcase/last-signal-captions-game-audio.mp4");
 const liveDuration=duration(`${live}/live-chat-clip.mp4`);
 const stamp=(s)=>new Date(Math.round(s*1000)).toISOString().slice(11,23).replace(".",",");
 fs.writeFileSync(`${out}/last-signal-showcase.srt`,fs.readFileSync("artifacts/showcase/last-signal-showcase.srt","utf8")+`\n11\n${stamp(baseDuration)} --> ${stamp(baseDuration+liveDuration)}\nLIVE TWITCH: anashk999\nReal commands received and accepted by the game.\n\n12\n${stamp(baseDuration+liveDuration)} --> ${stamp(baseDuration+liveDuration+5)}\nConnected to Twitch IRC\nFour real messages received.\n`);
-fs.writeFileSync(`${out}/final-video-evidence.json`,JSON.stringify({fps:60,motionInterpolation:false,chatTextInterpolated:false,realCommands:record.realCommands,baseDuration,liveDuration,finalDuration:duration(`${out}/last-signal-voiceover-game-audio.mp4`)},null,2));
+fs.writeFileSync(`${out}/final-video-evidence.json`,JSON.stringify({fps:60,motionInterpolation:false,openingMotion:"gentle 3.6 second push and orbit",chatTextInterpolated:false,realCommands:record.realCommands,baseDuration,liveDuration,finalDuration:duration(`${out}/last-signal-voiceover-game-audio.mp4`)},null,2));
 console.log("Both final demos include real Twitch commands and connection proof.");
