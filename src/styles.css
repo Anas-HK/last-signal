@@ -2644,3 +2644,41 @@ h1 > span {
     font-size: 8px;
   }
 }
+.live-feedback {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 15px 17px;
+  border: 1px solid #30524d;
+  background: #0e211f;
+  border-radius: 5px;
+  margin-bottom: 24px;
+  font-size: 11px;
+  color: #8bb7ac;
+}
+.live-feedback > svg,
+.live-feedback strong {
+  color: #70ead8;
+}
+.live-feedback strong {
+  font-weight: 500;
+}
+.live-feedback code {
+  color: #f5b65d;
+}
+.live-feedback small {
+  margin-left: auto;
+  white-space: nowrap;
+  font-family: var(--mono);
+  font-size: 8px;
+  color: #5f8d81;
+}
+@media (max-width: 640px) {
+  .live-feedback {
+    font-size: 10px;
+    align-items: flex-start;
+  }
+  .live-feedback small {
+    display: none;
+  }
+}

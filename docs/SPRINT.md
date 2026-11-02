@@ -25,3 +25,7 @@ Report live integration as unverified until an authorized channel message has re
 ## 20:50 update (~6h15 remaining)
 
 Core product, procedural visuals, individual crew actions, ALL HANDS, OBS, docs and the full demo mission work. 16 unit/adapter tests and the full browser suite pass. Twitch application registration hit a user-account 2FA block, so a read-only anonymous IRC compatibility path was tested against the real service and added to the product. The live app is connected to anashk123; awaiting a viewer command to complete end-to-end verification. OAuth/EventSub remains implemented and fixture-tested.
+
+## 21:15 update (~5h50 remaining)
+
+Working rescue, keyless Twitch IRC, 18 engine/adapter tests, 3 browser journeys, and initial remote CI all pass. Real channel messages reached the adapter; user reported boost/shield working. Their feedback prompted stronger physics (53→105), authoritative speed HUD, clear shield-impact feedback, crew precharging, and rejection reasons. Recorded and encoded a 2:32 1080p rehearsal MP4 with captions and draft speech. Source is public at github.com/Anas-HK/last-signal. User will review and upload the public YouTube video personally. Session ID and all submission text are documented.

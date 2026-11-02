@@ -25,6 +25,7 @@ export class Game {
   input: Input = { up: false, down: false, left: false, right: false };
   private rng = random(42);
   private clock = 0;
+  private cooldowns = new Map<string, number>();
   private nextId = 0;
   private nextBot = 0;
   private rateWindow = 0;
@@ -35,6 +36,7 @@ export class Game {
   private create(mode: Mode, seed: number): GameState {
     this.rng = random(seed);
     this.clock = 0;
+    this.cooldowns.clear();
     this.nextBot = 0;
     this.nextId = 0;
     this.rateWindow = 0;
@@ -56,6 +58,7 @@ export class Game {
       elapsed: 0,
       distance: 0,
       ship: {
+        speed: 53,
         x: 245,
         y: 330,
         vx: 0,
@@ -142,15 +145,26 @@ export class Game {
     simulated: boolean,
   ): { accepted: boolean; reason?: string } {
     const s = this.state;
-    if (s.phase !== "running" || s.countdown > 0)
-      return { accepted: false, reason: "Launch the mission first." };
+    if (
+      !["ready", "running"].includes(s.phase) ||
+      (s.phase === "running" && s.countdown > 0)
+    )
+      return {
+        accepted: false,
+        reason:
+          s.phase === "paused"
+            ? "Resume the mission to activate crew commands."
+            : s.countdown > 0 && s.phase === "running"
+              ? "Wait for the launch countdown."
+              : "Start a new rescue to activate your crew.",
+      };
     if ((s.mode === "live" && simulated) || (s.mode === "demo" && !simulated))
       return {
         accepted: false,
         reason: "Command source does not match this mission.",
       };
     const member = s.crew.find((c) => c.id === id);
-    if (member && this.clock - member.lastAction < 1.8)
+    if (this.clock - (this.cooldowns.get(id) ?? -10) < 1.8)
       return {
         accepted: false,
         reason: "Your crew member is recharging (2s).",
@@ -198,7 +212,8 @@ export class Game {
     if (!member) s.crew.push(crew);
     crew.role = role;
     crew.color = COLORS[role];
-    crew.lastAction = this.clock;
+    crew.lastAction = s.elapsed;
+    this.cooldowns.set(id, this.clock);
     crew.actions++;
     crew.points += Math.round(amount);
     s.actions++;
@@ -219,9 +234,9 @@ export class Game {
       },
     );
     s.links = s.links.filter(
-      (l) => s.elapsed - l.t < 6 && l.role !== role && l.id !== id,
+      (l) => this.clock - l.t < 6 && l.role !== role && l.id !== id,
     );
-    s.links.push({ role, id, name: crew.name, t: s.elapsed });
+    s.links.push({ role, id, name: crew.name, t: this.clock });
     if (s.links.length === 3) {
       s.bursts++;
       s.overdriveUntil = s.elapsed + 6;
@@ -240,19 +255,20 @@ export class Game {
   }
   tick(dt: number) {
     dt = clamp(dt, 0, 0.1);
+    this.clock += dt;
     const s = this.state;
+    s.links = s.links.filter((l) => this.clock - l.t < 6);
     if (s.phase !== "running") return;
     if (s.countdown > 0) {
       s.countdown = Math.max(0, s.countdown - dt);
       return;
     }
-    this.clock += dt;
     s.elapsed += dt;
-    s.links = s.links.filter((l) => s.elapsed - l.t < 6);
     const ship = s.ship;
     s.storm = s.distance > 2400 && s.distance < 4500;
-    const speed = 53 + (ship.boost > 1 ? 26 : 0);
-    s.distance += speed * dt;
+    const targetSpeed = ship.boost > 1 ? 105 : 53;
+    ship.speed += (targetSpeed - ship.speed) * Math.min(1, dt * 4);
+    s.distance += ship.speed * dt;
     ship.boost = Math.max(0, ship.boost - dt * 9);
     ship.shield = Math.max(0, ship.shield - dt * 1.9);
     ship.hull = Math.max(0, ship.hull - dt * (s.storm ? 0.3 : 0.1));

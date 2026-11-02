@@ -23,6 +23,36 @@ test("chat parser accepts exact commands and rejects lookalikes", () => {
   ])
     assert.equal(parseCommand(text), null);
 });
+test("real viewers can crew the ready ship and recharge between lobby commands", () => {
+  const g = new Game();
+  g.reset("live");
+  assert.equal(g.command("real", "Viewer", "shield", false).accepted, true);
+  assert.equal(g.state.ship.shield, 38);
+  assert.equal(g.state.crew[0].simulated, false);
+  assert.equal(g.command("real", "Viewer", "boost", false).accepted, false);
+  for (let i = 0; i < 61; i++) g.tick(1 / 30);
+  assert.equal(g.command("real", "Viewer", "boost", false).accepted, true);
+  assert.equal(g.state.ship.boost, 22);
+  assert.equal(g.state.distance, 0);
+});
+test("boost causes measurable acceleration and greater travel distance, then decays to cruise", () => {
+  const normal = launch(),
+    boosted = launch();
+  normal.state.rocks = [];
+  boosted.state.rocks = [];
+  boosted.command("engineer", "Engineer", "boost", true);
+  const a = normal.state.distance,
+    b = boosted.state.distance;
+  for (let i = 0; i < 30; i++) {
+    normal.tick(1 / 30);
+    boosted.tick(1 / 30);
+  }
+  assert.ok(boosted.state.ship.speed > 100);
+  assert.equal(normal.state.ship.speed, 53);
+  assert.ok(boosted.state.distance - b > (normal.state.distance - a) * 1.6);
+  for (let i = 0; i < 240; i++) boosted.tick(1 / 30);
+  assert.ok(boosted.state.ship.speed < 54);
+});
 test("countdown, pause and terminal state freeze mission simulation", () => {
   const g = new Game();
   g.start();

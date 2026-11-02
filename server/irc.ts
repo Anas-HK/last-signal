@@ -84,7 +84,7 @@ export class AnonymousChat {
       this.options.socket?.("wss://irc-ws.chat.twitch.tv:443") ??
       new WebSocket("wss://irc-ws.chat.twitch.tv:443");
     this.ws = ws;
-    const nick = `justinfan${Math.floor(100000 + Math.random() * 899999)}`;
+    const nick = `justinfan${Math.floor(10000 + Math.random() * 89999)}`;
     return new Promise((resolve, reject) => {
       this.pendingReject = reject;
       let joined = false;
@@ -101,7 +101,9 @@ export class AnonymousChat {
       };
       ws.on("open", () => {
         watch(15000);
-        ws.send("CAP REQ :twitch.tv/tags twitch.tv/commands\r\n");
+        ws.send(
+          "CAP REQ :twitch.tv/tags twitch.tv/commands twitch.tv/membership\r\n",
+        );
         ws.send("PASS SCHMOOPIIE\r\n");
         ws.send(`NICK ${nick}\r\n`);
         ws.send(`JOIN #${this.options.channel}\r\n`);

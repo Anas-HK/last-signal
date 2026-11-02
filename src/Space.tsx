@@ -109,6 +109,8 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
       shipY = 330,
       distance = 0;
     let particles: Particle[] = [];
+    let impactAt = -10,
+      impactBlocked = false;
     const resize = () => {
       const dpr = Math.min(devicePixelRatio || 1, 2);
       el.width = W * dpr;
@@ -122,6 +124,8 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
       elapsed += dt;
       const s = latest.current;
       const active = s.phase === "running" && s.countdown <= 0;
+      const velocity = s.ship.speed ?? (s.ship.boost > 1 ? 79 : 53);
+      const boostRatio = Math.max(0, Math.min(1, (velocity - 53) / 52));
       if (id !== s.id) {
         id = s.id;
         eventId = 0;
@@ -169,12 +173,12 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
         const x = (((star.x - offset) % W) + W) % W;
         ctx.globalAlpha =
           star.alpha * (0.85 + Math.sin(elapsed + star.x) * 0.15);
-        if (active && s.ship.boost > 1) {
+        if (active && boostRatio > 0.05) {
           ctx.strokeStyle = "#bcd9d8";
           ctx.lineWidth = star.r;
           ctx.beginPath();
           ctx.moveTo(x, star.y);
-          ctx.lineTo(x + 8 + star.r * 7, star.y);
+          ctx.lineTo(x + boostRatio * (20 + star.r * 20), star.y);
           ctx.stroke();
         } else circle(ctx, x, star.y, star.r, "#bcd9d8");
       }
@@ -332,7 +336,9 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
         label(ctx, "JUMP GATE // HOME", x, 95, "#70ead8", 13, "center");
       }
       // Engine trails.
-      const thrust = active ? (s.ship.boost > 1 ? 1.8 : 1) : 0.45;
+      const thrust = active ? 1 + boostRatio * 2.3 : 0.45;
+      if (active && boostRatio > 0.1)
+        glow(ctx, shipX - 50, shipY, 100 + boostRatio * 45, "#f5b65d18");
       for (let n = 0; n < 2; n++) {
         const y = shipY + (n ? 17 : -17);
         const gradient = ctx.createLinearGradient(
@@ -512,6 +518,10 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
         if (event.id <= eventId) continue;
         eventId = event.id;
         if (s.elapsed - event.t > 2) continue;
+        if (event.type === "hit" || event.type === "blocked") {
+          impactAt = elapsed;
+          impactBlocked = event.type === "blocked";
+        }
         playSound(event.type);
         if (
           ["rescue", "hit", "blocked", "command", "sync"].includes(event.type)
@@ -547,6 +557,23 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
         circle(ctx, p.x, p.y, p.r, p.color);
       }
       ctx.globalAlpha = 1;
+      const impactAge = elapsed - impactAt;
+      if (impactAge < 0.9) {
+        const color = impactBlocked ? "#70ead8" : "#fb7c70";
+        ctx.globalAlpha = 1 - impactAge / 0.9;
+        ctx.lineWidth = 3;
+        circle(ctx, shipX, shipY, 50 + impactAge * 75, undefined, color);
+        label(
+          ctx,
+          impactBlocked ? "IMPACT BLOCKED" : "HULL HIT · SEND !REPAIR",
+          shipX,
+          shipY - 100,
+          color,
+          13,
+          "center",
+        );
+        ctx.globalAlpha = 1;
+      }
       // Flight HUD kept inside the image for OBS parity.
       const vignette = ctx.createRadialGradient(
         W / 2,
@@ -561,6 +588,16 @@ export function Space({ game, onInput, onPause, spectator }: Props) {
       ctx.fillStyle = vignette;
       ctx.fillRect(0, 0, W, H);
       label(ctx, "SECTOR 07 / THE QUIET REACH", 30, 35, "#a3b4b7", 10);
+      if (s.phase !== "ready")
+        label(
+          ctx,
+          `${boostRatio > 0.1 ? "BOOST ACTIVE" : "CRUISE"}  //  ${(velocity / 10).toFixed(1)} KM/S`,
+          W / 2,
+          35,
+          boostRatio > 0.1 ? "#f5b65d" : "#8b9aa4",
+          12,
+          "center",
+        );
       label(
         ctx,
         s.mode === "demo"

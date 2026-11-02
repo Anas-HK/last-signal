@@ -9,6 +9,7 @@ export default defineConfig({
     viewport: { width: 1536, height: 1080 },
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
+    video: { mode: "on", size: { width: 1920, height: 1080 } },
   },
   webServer: {
     command: "npm run build && npm start",

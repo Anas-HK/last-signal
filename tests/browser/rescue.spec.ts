@@ -47,6 +47,7 @@ test("pilot input, manual viewer action, pause, source separation and spectator 
       .toBe(true);
     await expect(page.getByRole("log")).toContainText("test_captain");
     const overlay = await context.newPage();
+    await overlay.setViewportSize({ width: 1920, height: 1080 });
     await overlay.goto("/overlay");
     await expect(
       overlay.getByText("REHEARSAL · SIMULATED CHAT", { exact: true }),
@@ -114,12 +115,21 @@ test("a full real-time rehearsal wins, mirrors to OBS, and exports a correctly l
     await page.getByLabel("Training pilot", { exact: true }).check();
     await page.getByRole("button", { name: "Launch rescue" }).click();
     const overlay = await context.newPage();
+    await overlay.setViewportSize({ width: 1920, height: 1080 });
     await overlay.goto("/overlay");
     await overlay.waitForSelector("canvas");
     await expect
       .poll(() => observer.read()?.game.actions, { timeout: 15000 })
       .toBeGreaterThan(3);
     await page.screenshot({ path: "docs/screen-flight.png", fullPage: true });
+    await expect
+      .poll(
+        () =>
+          observer.read().game.overdriveUntil > observer.read().game.elapsed,
+        { timeout: 30000 },
+      )
+      .toBe(true);
+    await overlay.screenshot({ path: "docs/screen-all-hands.png" });
     await expect
       .poll(() => observer.read().game.rescued, { timeout: 40000 })
       .toBeGreaterThan(0);
@@ -141,11 +151,15 @@ test("a full real-time rehearsal wins, mirrors to OBS, and exports a correctly l
       true,
     );
     await page.screenshot({ path: "docs/screen-result.png", fullPage: true });
+    await overlay.screenshot({ path: "artifacts/demo/result-frame.png" });
+    await overlay.waitForTimeout(8000);
+    const video = overlay.video();
+    await overlay.close();
+    await video?.saveAs("artifacts/demo/last-signal-rehearsal-raw.webm");
     await page.getByRole("button", { name: "Fly again" }).click();
     await expect(
       page.getByRole("button", { name: "Launch rescue" }),
     ).toBeVisible();
-    await overlay.close();
   } finally {
     observer.ws.close();
   }

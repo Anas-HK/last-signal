@@ -48,6 +48,7 @@ export type Pod = {
   people: number;
 };
 export type Ship = {
+  speed: number;
   x: number;
   y: number;
   vx: number;
@@ -84,6 +85,13 @@ export type GameState = {
   overdriveUntil: number;
 };
 export type TwitchStatus = {
+  lastCommand?: {
+    name: string;
+    command: Command;
+    at: number;
+    accepted: boolean;
+    reason?: string;
+  };
   status: "offline" | "connecting" | "connected" | "reconnecting" | "error";
   channel: string;
   account: string;

@@ -5,7 +5,7 @@ Date: 2026-11-02. Windows, Node.js 24.22.1.
 ## Automated checks
 
 - Strict TypeScript checks and Vite production build pass.
-- **16/16 engine and Twitch adapter tests pass.**
+- **18/18 engine and Twitch adapter tests pass.**
 - Deterministic rehearsal verifies three recovered pods, 13 survivors, real shield blocks, accepted crew contributions, and completion before the two-minute deadline.
 - ALL HANDS tests verify three distinct identities, expired-link rejection, contribution points, and the expanded physical rescue radius.
 - Twitch adapter tests use disclosed fixtures: OAuth scope checks, official subscription body, notification routing, channel filtering, deduplication, reconnect migration without duplicate subscriptions, and unsafe reconnect URL rejection.
@@ -13,9 +13,13 @@ Date: 2026-11-02. Windows, Node.js 24.22.1.
 
 ## Twitch live status
 
-**Credential-free live IRC channel connection: verified. Real channel-command validation: waiting for a viewer message. OAuth/EventSub authorization: pending app credentials.**
+**Credential-free live IRC connection and real message reception: verified. User reports boost and shield working. OAuth/EventSub authorization: pending app credentials.**
 
 On 2026-11-02, Twitch's actual `wss://irc-ws.chat.twitch.tv:443` endpoint accepted an anonymous read-only connection to `anashk123`, returned `JOIN`, numeric `366`, and `ROOMSTATE` with room ID `1603913962`. The app's own connection flow also joined successfully and displayed **Twitch IRC · read-only**. No client ID or secret was used. The IRC parser and fragmented-frame/deduplication tests pass.
+
+At approximately 15:57 UTC the game's own Twitch adapter showed **2 real messages received**. An independent listener captured `anashk999` sending `!boost` to `#anashk123`. Earlier commands arrived after a mission had ended and were rejected by the game lifecycle; the UI was improved to show explicit rejection reasons and to accept crew precharging on the ready screen. At approximately 16:00 UTC the user confirmed “Its working now booost and shield,” then requested a more visible boost effect. Boost now accelerates from 53 to 105 world units/s, has an authoritative velocity readout and longer engine/streak effects, and is verified by a physics test. An accepted live-crew snapshot, when captured, is saved as `live-validation.json`; absence of that file must not be described as captured engine-level live proof.
+
+GitHub CI for the initial source push passed: https://github.com/Anas-HK/last-signal/actions/runs/41475666412 . The latest local browser suite also passed all three journeys, including a complete rescue and ALL HANDS. A real-time recording was exported as a 2:32 rehearsal demonstration with explicit simulated-source labels and synthesized draft narration.
 
 The real official endpoint `wss://eventsub.wss.twitch.tv/ws` was reached on **2026-11-02 at 15:35:18 UTC** and returned `session_welcome` with a 10-second keepalive. That proves transport reachability only. It does not prove an authorized subscription or message from a real channel.
 

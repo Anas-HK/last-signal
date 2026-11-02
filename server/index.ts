@@ -4,6 +4,7 @@ import { createServer } from "node:http";
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { parseArgs } from "node:util";
 import { resolve, dirname } from "node:path";
 import { WebSocketServer, WebSocket } from "ws";
 import { Game } from "./game.js";
@@ -14,8 +15,13 @@ import {
   type Snapshot,
 } from "../shared/types.js";
 
-const port = Number(process.env.PORT || 3001);
-const appUrl = new URL(process.env.APP_URL || `http://localhost:${port}`);
+const { values: args } = parseArgs({
+  options: { port: { type: "string" }, "app-url": { type: "string" } },
+});
+const port = Number(args.port || process.env.PORT || 3001);
+const appUrl = new URL(
+  args["app-url"] || process.env.APP_URL || `http://localhost:${port}`,
+);
 const dev = process.env.NODE_ENV !== "production";
 const origins = new Set([
   appUrl.origin,
@@ -36,7 +42,17 @@ const twitch = new Twitch({
   clientSecret: process.env.TWITCH_CLIENT_SECRET || "",
   redirectUri: `${appUrl.origin}/auth/twitch/callback`,
   onCommand: (id, name, command) => {
-    game.command(`twitch-${id}`, name, command, false);
+    const result = game.command(`twitch-${id}`, name, command, false);
+    twitch.status.lastCommand = { name, command, at: Date.now(), ...result };
+    if (
+      !result.accepted &&
+      game.state.mode === "live" &&
+      game.state.phase === "ready"
+    )
+      game.event(
+        "system",
+        `Chat check: ${name} sent !${command}. Launch to activate your crew.`,
+      );
   },
 });
 const pendingOAuth = new Map<string, number>();
@@ -175,12 +191,9 @@ app.post("/api/twitch/anonymous", async (req, res) => {
     game.reset("live");
     res.json({ ok: true });
   } catch (e) {
-    res
-      .status(400)
-      .json({
-        error:
-          e instanceof Error ? e.message : "Twitch chat connection failed.",
-      });
+    res.status(400).json({
+      error: e instanceof Error ? e.message : "Twitch chat connection failed.",
+    });
   }
 });
 app.post("/api/twitch/disconnect", (_req, res) => {
@@ -353,14 +366,12 @@ app.use(
     res: express.Response,
     _next: express.NextFunction,
   ) => {
-    res
-      .status(400)
-      .json({
-        error:
-          error instanceof SyntaxError
-            ? "Invalid JSON request."
-            : "Request could not be processed.",
-      });
+    res.status(400).json({
+      error:
+        error instanceof SyntaxError
+          ? "Invalid JSON request."
+          : "Request could not be processed.",
+    });
   },
 );
 server.listen(port, process.env.HOST || "127.0.0.1", () =>

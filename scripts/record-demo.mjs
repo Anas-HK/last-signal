@@ -2,7 +2,8 @@
 // Usage: npm start (separate terminal), then node scripts/record-demo.mjs
 import { chromium } from "@playwright/test";
 import fs from "node:fs";
-const origin = process.env.RECORD_URL || "http://localhost:3001";
+const origin =
+  process.argv[2] || process.env.RECORD_URL || "http://localhost:3001";
 fs.mkdirSync("artifacts/demo/raw", { recursive: true });
 const browser = await chromium.launch();
 const context = await browser.newContext({

@@ -315,6 +315,7 @@ export class Twitch {
     this.socket = undefined;
   }
   disconnect() {
+    delete this.status.lastCommand;
     this.irc?.disconnect();
     this.irc = undefined;
     this.closeTransport();

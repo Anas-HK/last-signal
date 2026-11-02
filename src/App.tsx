@@ -698,7 +698,10 @@ export function App() {
               {(["shield", "boost", "repair"] as Command[]).map((c) => (
                 <button
                   className={`manual-button ${c}`}
-                  disabled={game.phase !== "running" || game.countdown > 0}
+                  disabled={
+                    !["ready", "running"].includes(game.phase) ||
+                    (game.phase === "running" && game.countdown > 0)
+                  }
                   key={c}
                   onClick={() => send({ type: "command", command: c, name })}
                 >
@@ -707,6 +710,27 @@ export function App() {
               ))}
             </div>
           </section>
+        )}
+        {live && (
+          <div className="live-feedback">
+            <Radio size={15} />
+            <span>
+              {state.twitch.lastCommand ? (
+                <>
+                  <strong>{state.twitch.lastCommand.name}</strong> sent{" "}
+                  <code>!{state.twitch.lastCommand.command}</code> ·{" "}
+                  {state.twitch.lastCommand.accepted
+                    ? "Crew action applied to the ship."
+                    : state.twitch.lastCommand.reason}
+                </>
+              ) : state.twitch.received > 0 ? (
+                `${state.twitch.received} real chat messages received. Send !shield or !boost to crew the ship.`
+              ) : (
+                "Listening to real Twitch chat. Send !shield or !boost to charge your ship before launch."
+              )}
+            </span>
+            <small>{state.twitch.received} MESSAGES</small>
+          </div>
         )}
         {live && state.twitch.error && (
           <div className="inline-warning">

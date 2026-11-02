@@ -26,7 +26,7 @@ Open **http://localhost:3001**. No credentials are needed for rehearsal.
 4. Turn on **Training pilot** for a reproducible, hands-free rehearsal, or pilot yourself.
 5. Try the manual viewer controls below the flight screen. Every simulated action is visibly labeled.
 
-The mission lasts up to 120 seconds. The training pilot with simulated crew completes the default seed in about 90 seconds, rescuing all 13 survivors. Collisions, shields, repairs, rescues, and the result are calculated by the game; the demonstration is not a scripted video or predetermined win.
+The mission lasts up to 120 seconds. The training pilot with simulated crew completes the default seed in about 77 seconds, rescuing all 13 survivors. Collisions, shields, repairs, rescues, and the result are calculated by the game; the demonstration is not a scripted video or predetermined win.
 
 ## Twitch integration — no keys required
 
@@ -115,7 +115,7 @@ Browser tests cover actual keyboard movement, viewer input, pause/reset, source 
 ## Architecture
 
 ```text
-Twitch chat → EventSub → Twitch adapter → authoritative game engine
+Twitch chat → IRC / EventSub → Twitch adapter → authoritative game engine
                                              ↑         ↓
                                      pilot inputs   snapshots
                                              ↑         ↓
@@ -135,6 +135,8 @@ Simulation runs at 30 Hz; snapshots are sent at 15 Hz and rendered with browser 
 ## Submission
 
 - [Project description](docs/PROJECT_DESCRIPTION.md)
+- Prepared demo MP4: `artifacts/demo/last-signal-demo.mp4` (2:32, full working rehearsal, captions and synthesized draft narration).
+- Downloadable demo and captions: [GitHub release](https://github.com/Anas-HK/last-signal/releases/tag/v0.1.0).
 - [Under-three-minute video script and recording instructions](docs/DEMO_SCRIPT.md)
 - [Submission checklist](docs/SUBMISSION.md)
 - [Codex session and development record](docs/CODEX_SESSION.md)
